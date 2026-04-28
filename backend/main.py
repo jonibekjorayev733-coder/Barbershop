@@ -1277,7 +1277,13 @@ async def realtime_events_ws(websocket: WebSocket, channel: str):
 
     try:
         while True:
-            await websocket.receive_text()
+            msg = await websocket.receive_text()
+            # Handle ping-pong for keep-alive and latency monitoring
+            if msg == "ping":
+                try:
+                    await websocket.send_text("pong")
+                except Exception:
+                    pass
     except WebSocketDisconnect:
         realtime_manager.disconnect(channel, websocket)
     except Exception:

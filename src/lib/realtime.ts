@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../features/admin-panel/api";
+import { wsDialostics } from "./wsDiagnostics";
 
 export interface RealtimeEventPayload<T = Record<string, unknown>> {
   event_id?: string;
@@ -94,16 +95,44 @@ export function subscribeRealtimeChannel(
 
     nextSocket.onopen = () => {
       reconnectAttempts = 0;
+      wsDialostics.recordConnect();
       clearHeartbeat();
       heartbeatTimer = window.setInterval(() => {
         if (nextSocket.readyState === WebSocket.OPEN) {
           nextSocket.send("ping");
+          wsDialostics.recordPingSent();
         }
       }, 25000);
     };
 
+    // Message queue for batching and deduplication
+    let messageQueue: RealtimeEventPayload[] = [];
+    let processingTimer: number | null = null;
+
+    const processMessageQueue = () => {
+      if (messageQueue.length === 0) return;
+      const batch = messageQueue.splice(0, 10); // Process max 10 messages per batch
+      batch.forEach((msg) => {
+        try {
+          wsDialostics.recordMessageReceived();
+          onEvent(msg);
+        } catch (err) {
+          wsDialostics.recordError(`Message processing error: ${err}`);
+        }
+      });
+      if (messageQueue.length > 0) {
+        processingTimer = window.setTimeout(processMessageQueue, 16); // ~60fps
+      }
+    };
+
     nextSocket.onmessage = (event) => {
       try {
+        // Handle pong
+        if (event.data === "pong") {
+          wsDialostics.recordPongReceived();
+          return;
+        }
+
         const parsed = JSON.parse(event.data) as RealtimeEventPayload;
         if (parsed?.event && parsed?.channel) {
           if (typeof parsed.event_id === "string" && parsed.event_id) {
@@ -112,7 +141,10 @@ export function subscribeRealtimeChannel(
               return;
             }
           }
-          onEvent(parsed);
+          messageQueue.push(parsed);
+          if (processingTimer === null) {
+            processingTimer = window.setTimeout(processMessageQueue, 16);
+          }
         }
       } catch {
         return;
@@ -121,11 +153,13 @@ export function subscribeRealtimeChannel(
 
     nextSocket.onclose = () => {
       clearHeartbeat();
+      wsDialostics.recordDisconnect();
       if (manuallyClosed) {
         return;
       }
 
       reconnectAttempts += 1;
+      wsDialostics.recordReconnectAttempt();
       const baseDelay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000);
       const jitter = randomInt(0, 600);
       const retryDelay = baseDelay + jitter;
@@ -135,6 +169,7 @@ export function subscribeRealtimeChannel(
     };
 
     nextSocket.onerror = () => {
+      wsDialostics.recordError("WebSocket error");
       if (nextSocket.readyState === WebSocket.OPEN || nextSocket.readyState === WebSocket.CONNECTING) {
         nextSocket.close();
       }
