@@ -1,0 +1,308 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 199 89% 48%;
+    --sidebar-muted: 215 16% 47%;
+    --chart-1: 199 89% 48%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+    
+    /* Crystal Aurora Additions */
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: rgba(0, 0, 0, 0.05);
+    --glass-blur: 24px;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #8b5cf6;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 96%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 199 89% 48%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 199 89% 48%;
+    --sidebar-muted: 215 20% 65%;
+    --chart-1: 199 89% 48%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+    
+    /* Crystal Aurora Additions */
+    --glass-bg: rgba(10, 10, 10, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
+    --accent-primary: #60a5fa;
+    --accent-secondary: #a78bfa;
+  }
+
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-500;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+
+  /* Udar Pro Max - Crystal Aurora Design System */
+  :root {
+    --aurora-1: #3b82f6;
+    --aurora-2: #8b5cf6;
+    --aurora-3: #ec4899;
+  }
+
+  .crystal-glass {
+    backdrop-filter: blur(40px);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 30px 60px -15px rgba(0, 0, 0, 0.7),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .crystal-glass::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background-size: 200% 200%;
+    animation: crystal-glint 10s infinite linear;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  @keyframes crystal-glint {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 200%;
+    }
+  }
+
+  .udar-panel {
+    @apply crystal-glass rounded-[3rem] p-10 transition-all duration-1000;
+  }
+
+  /* Aurora Background Spots */
+  .aurora-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: #020202;
+    overflow: hidden;
+  }
+
+  .aurora-spot {
+    position: absolute;
+    filter: blur(150px);
+    opacity: 0.15;
+    animation: aurora-float 20s infinite alternate;
+  }
+
+  @keyframes aurora-float {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+      transform: translate(100px, 50px) scale(1.2);
+    }
+  }
+
+  /* Ultra-Premium Stat Cards */
+  .udar-card-v2 {
+    @apply crystal-glass rounded-[2rem] p-8 transition-all duration-700 cursor-pointer;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  }
+
+  .udar-card-v2:hover {
+    @apply border-white/20 -translate-y-2;
+    box-shadow:
+      0 40px 80px -20px rgba(0, 0, 0, 0.8),
+      0 0 30px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Typography / Labels */
+  .text-glow {
+    /* Disabled due to conflict with transparent background-clip */
+  }
+
+  .udar-heading {
+    @apply font-black italic tracking-tight leading-none;
+    letter-spacing: -0.05em;
+    background: linear-gradient(to bottom, #fff 40%, rgba(255, 255, 255, 0.4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .udar-label {
+    @apply text-[10px] font-black uppercase tracking-[0.5em] text-white/20 select-none;
+  }
+
+  /* Active Indicator */
+  .liquid-marker {
+    @apply absolute left-0 w-1.5 h-1/2 rounded-full bg-primary;
+    box-shadow: 0 0 30px 5px var(--primary);
+    filter: blur(0.5px);
+  }
+
+  /* Luxury Components */
+  .luxury-button {
+    @apply relative overflow-hidden rounded-2xl px-8 py-4 bg-white/5 border border-white/10 font-black uppercase tracking-[0.3em] text-[10px] transition-all;
+  }
+
+  .luxury-button::before {
+    content: '';
+    @apply absolute inset-0 bg-primary opacity-0 transition-opacity duration-500;
+  }
+
+  .luxury-button:hover {
+    @apply scale-105 border-primary/40 shadow-[0_0_40px_-10px_var(--primary)];
+  }
+
+  /* Glass Input */
+  .glass-input {
+    @apply bg-white/5 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/10 transition-all font-bold;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-black/40 backdrop-blur-3xl border border-transparent transition-all duration-500;
+    box-shadow: 
+      0 15px 35px -5px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 18px 45px -20px rgba(255, 255, 255, 0.12),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  button.btn-global-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.82;
+    filter: saturate(0.9);
+  }
+
+  button.btn-global-loading::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: rgba(255, 255, 255, 1);
+    animation: edugrow-spin 0.7s linear infinite;
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes edugrow-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  main .rounded-2xl,
+  main .rounded-3xl {
+    box-shadow:
+      0 18px 40px -24px rgba(0, 0, 0, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 8px 28px -20px rgba(255, 255, 255, 0.14);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

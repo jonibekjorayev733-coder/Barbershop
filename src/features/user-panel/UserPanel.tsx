@@ -1,0 +1,702 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FiArrowRight,
+  FiCalendar,
+  FiCheck,
+  FiClock,
+  FiScissors,
+  FiShare2,
+  FiShield,
+  FiStar,
+  FiZap,
+} from "react-icons/fi";
+import {
+  createUserBooking,
+  getBarberAvailability,
+  getUserBookingBarbers,
+  updateStudentProfile,
+  type BarberAvailabilityApi,
+  type UserBookingBarberApi,
+  type UserBookingConfirmationApi,
+} from "../admin-panel/api";
+import { fileToOptimizedAvatarDataUrl } from "../../lib/avatar";
+import { emitProfileSync, subscribeProfileSync } from "../../lib/profileSync";
+import { subscribeRealtimeChannel } from "../../lib/realtime";
+import { formatIsoDateInTashkent, getTashkentTodayISO } from "../../lib/time";
+
+interface UserPanelProps {
+  userId: number;
+  userName: string;
+  userEmail?: string;
+  userAvatar?: string | null;
+  onProfileUpdated?: (payload: { name: string; email: string; avatar?: string | null }) => void;
+  onLogout: () => void;
+}
+
+type UserBookingStep = "barbers" | "times" | "details" | "success";
+
+const BOOKING_STEPS: Array<{ id: UserBookingStep; label: string }> = [
+  { id: "barbers", label: "Sartarosh" },
+  { id: "times", label: "Vaqt" },
+  { id: "details", label: "Ma'lumot" },
+  { id: "success", label: "Tasdiq" },
+];
+
+const STEP_ORDER: Record<UserBookingStep, number> = {
+  barbers: 1,
+  times: 2,
+  details: 3,
+  success: 4,
+};
+
+function formatHumanDate(dateValue: string): string {
+  return formatIsoDateInTashkent(dateValue, "uz-UZ", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function getInitials(name: string): string {
+  const parts = name.split(" ").filter(Boolean).slice(0, 2);
+  if (parts.length === 0) {
+    return "SB";
+  }
+  return parts.map((item) => item[0]?.toUpperCase() ?? "").join("");
+}
+
+export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProfileUpdated, onLogout }: UserPanelProps) {
+  const [step, setStep] = useState<UserBookingStep>("barbers");
+  const [barbers, setBarbers] = useState<UserBookingBarberApi[]>([]);
+  const [selectedBarber, setSelectedBarber] = useState<UserBookingBarberApi | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => getTashkentTodayISO());
+  const [availability, setAvailability] = useState<BarberAvailabilityApi | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [clientName, setClientName] = useState(userName || "");
+  const [clientPhone, setClientPhone] = useState("");
+  const [confirmation, setConfirmation] = useState<UserBookingConfirmationApi | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // --- Profile drawer state ---
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profName, setProfName] = useState(userName);
+  const [profEmail, setProfEmail] = useState(userEmail);
+  const [profPassword, setProfPassword] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(userAvatar ?? null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profileToast, setProfileToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setProfName(userName);
+    setProfEmail(userEmail);
+    setAvatarPreview(userAvatar ?? null);
+  }, [userName, userEmail, userAvatar]);
+
+  const showProfileToast = (type: "success" | "error", message: string) => {
+    setProfileToast({ type, message });
+    window.setTimeout(() => setProfileToast(null), 3200);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    void (async () => {
+      try {
+        const result = await fileToOptimizedAvatarDataUrl(file);
+        setAvatarPreview(result);
+      } catch (error) {
+        showProfileToast("error", error instanceof Error ? error.message : "Rasm tayyorlanmadi.");
+      }
+    })();
+  };
+
+  const handleProfileSave = async () => {
+    const trimName = profName.trim();
+    const trimEmail = profEmail.trim().toLowerCase();
+    if (!trimName || !trimEmail) { showProfileToast("error", "Ism va emailni to'ldiring."); return; }
+    try {
+      setIsSaving(true);
+      const updated = await updateStudentProfile(userId, {
+        name: trimName,
+        email: trimEmail,
+        password: profPassword.trim() || undefined,
+        avatar: avatarPreview || undefined,
+      });
+      onProfileUpdated?.({ name: updated.name, email: updated.email, avatar: updated.avatar });
+      emitProfileSync({ entityType: "user", entityId: userId, name: updated.name, email: updated.email, avatar: updated.avatar });
+      setProfPassword("");
+      setIsProfileOpen(false);
+      showProfileToast("success", "Profil yangilandi.");
+    } catch (err) {
+      showProfileToast("error", err instanceof Error ? err.message : "Saqlashda xatolik.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const currentAvatar = avatarPreview || userAvatar;
+
+  useEffect(() => {
+    const unsubscribe = subscribeProfileSync((payload) => {
+      if (payload.entityType !== "barber") {
+        return;
+      }
+
+      setBarbers((current) =>
+        current.map((barber) =>
+          barber.id === payload.entityId
+            ? {
+                ...barber,
+                name: payload.name ?? barber.name,
+                photo_url: payload.avatar !== undefined ? (payload.avatar ?? null) : barber.photo_url,
+              }
+            : barber,
+        ),
+      );
+
+      setSelectedBarber((current) =>
+        current && current.id === payload.entityId
+          ? {
+              ...current,
+              name: payload.name ?? current.name,
+              photo_url: payload.avatar !== undefined ? (payload.avatar ?? null) : current.photo_url,
+            }
+          : current,
+      );
+
+      setConfirmation((current) =>
+        current && current.barber_id === payload.entityId
+          ? {
+              ...current,
+              barber_name: payload.name ?? current.barber_name,
+              barber_photo_url: payload.avatar !== undefined ? (payload.avatar ?? null) : current.barber_photo_url,
+            }
+          : current,
+      );
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const humanDate = useMemo(() => formatHumanDate(selectedDate), [selectedDate]);
+  const currentStepNumber = STEP_ORDER[step];
+
+  const filteredBarbers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return barbers;
+    }
+    return barbers.filter(
+      (barber) =>
+        barber.name.toLowerCase().includes(query) ||
+        barber.specialty.toLowerCase().includes(query),
+    );
+  }, [barbers, searchTerm]);
+
+  const averageRating = useMemo(() => {
+    if (barbers.length === 0) {
+      return "0.0";
+    }
+    const total = barbers.reduce((sum, barber) => sum + barber.rating, 0);
+    return (total / barbers.length).toFixed(1);
+  }, [barbers]);
+
+  const maxExperience = useMemo(() => {
+    if (barbers.length === 0) {
+      return 0;
+    }
+    return Math.max(...barbers.map((barber) => barber.years_experience));
+  }, [barbers]);
+
+  const refreshAvailability = async (barberId: number, dateValue: string) => {
+    const data = await getBarberAvailability(barberId, dateValue);
+    setAvailability(data);
+  };
+
+  useEffect(() => {
+    const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
+      if (!selectedBarber) {
+        return;
+      }
+
+      const eventData = payload.data as { barber_id?: number; appointment_date?: string };
+      if (eventData.barber_id && eventData.barber_id !== selectedBarber.id) {
+        return;
+      }
+      if (eventData.appointment_date && eventData.appointment_date !== selectedDate) {
+        return;
+      }
+
+      void refreshAvailability(selectedBarber.id, selectedDate).catch(() => undefined);
+    });
+
+    return unsubscribe;
+  }, [selectedBarber, selectedDate]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const rows = await getUserBookingBarbers();
+        setBarbers(rows);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Sartaroshlar yuklanmadi.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const pickBarber = async (barber: UserBookingBarberApi) => {
+    try {
+      setErrorMessage(null);
+      setLoading(true);
+      setSelectedBarber(barber);
+      setSelectedTime("");
+      await refreshAvailability(barber.id, selectedDate);
+      setStep("times");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Bo'sh vaqtlar yuklanmadi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const shiftDate = async (days: number) => {
+    if (!selectedBarber) {
+      return;
+    }
+    const next = new Date(`${selectedDate}T12:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + days);
+    const nextDate = getTashkentTodayISO(next);
+
+    try {
+      setLoading(true);
+      setSelectedDate(nextDate);
+      setSelectedTime("");
+      await refreshAvailability(selectedBarber.id, nextDate);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Sana bo'yicha vaqt yuklanmadi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const continueToDetails = () => {
+    if (!selectedTime) {
+      setErrorMessage("Davom etish uchun vaqtni tanlang.");
+      return;
+    }
+    setErrorMessage(null);
+    setStep("details");
+  };
+
+  const submitBooking = async () => {
+    if (!selectedBarber || !selectedTime) {
+      setErrorMessage("Avval sartarosh va vaqt tanlang.");
+      return;
+    }
+    if (!clientName.trim() || !clientPhone.trim()) {
+      setErrorMessage("Ism va telefon raqamingizni kiriting.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+      const result = await createUserBooking({
+        barber_id: selectedBarber.id,
+        appointment_date: selectedDate,
+        appointment_time: selectedTime,
+        client_name: clientName.trim(),
+        client_phone: clientPhone.trim(),
+        service_name: selectedBarber.specialty,
+        user_id: userId,
+      });
+      setConfirmation(result);
+      setStep("success");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Bron yaratilmadi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetFlow = async () => {
+    setStep("barbers");
+    setSelectedTime("");
+    setSelectedBarber(null);
+    setAvailability(null);
+    setConfirmation(null);
+    setErrorMessage(null);
+    try {
+      const rows = await getUserBookingBarbers();
+      setBarbers(rows);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Sartaroshlar yuklanmadi.");
+    }
+  };
+
+  const shareBooking = async () => {
+    if (!confirmation) {
+      return;
+    }
+
+    const text = `Bron raqami: ${confirmation.booking_id}\nSartarosh: ${confirmation.barber_name}\nSana: ${formatHumanDate(
+      confirmation.appointment_date,
+    )}\nVaqt: ${confirmation.appointment_time}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Sharp Cuts bron tafsilotlari",
+          text,
+        });
+        setShareMessage("Bron tafsilotlari ulashildi.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(text);
+      setShareMessage("Bron tafsilotlari nusxalandi.");
+    } catch {
+      setShareMessage("Ulashishda xatolik bo'ldi.");
+    }
+  };
+
+  return (
+    <div className={`ub-shell ub-shell-${step}`}>
+      <div className="ub-container">
+        {profileToast ? <div className={`ba-toast ba-toast-${profileToast.type}`}>{profileToast.message}</div> : null}
+
+        {/* Profile Drawer */}
+        {isProfileOpen ? (
+          <div className="admin-profile-overlay" onClick={() => { if (!isSaving) setIsProfileOpen(false); }}>
+            <aside className="admin-profile-drawer" onClick={(e) => e.stopPropagation()}>
+              <div className="barber-drawer-head">
+                <h3>Mening profilim</h3>
+                <button type="button" className="barber-drawer-close" onClick={() => { if (!isSaving) setIsProfileOpen(false); }}>×</button>
+              </div>
+              <div className="barber-form">
+                <div className="prof-avatar-section">
+                  <div className="prof-avatar-wrap">
+                    {currentAvatar ? (
+                      <img src={currentAvatar} alt="Avatar" className="prof-avatar-img" />
+                    ) : (
+                      <div className="prof-avatar-placeholder">{getInitials(userName)}</div>
+                    )}
+                    <button type="button" className="prof-avatar-edit" onClick={() => fileInputRef.current?.click()} title="Rasm tanlash">✎</button>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
+                  {currentAvatar && (
+                    <button type="button" className="prof-avatar-remove" onClick={() => { setAvatarPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                      Rasmni o'chirish
+                    </button>
+                  )}
+                </div>
+                <label className="barber-field"><span>Ism</span>
+                  <input value={profName} onChange={(e) => setProfName(e.target.value)} placeholder="Ismingiz" />
+                </label>
+                <label className="barber-field"><span>Email</span>
+                  <input type="email" value={profEmail} onChange={(e) => setProfEmail(e.target.value)} placeholder="Email" />
+                </label>
+                <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
+                  <input type="password" value={profPassword} onChange={(e) => setProfPassword(e.target.value)} placeholder="Yangi parol" autoComplete="new-password" />
+                </label>
+                <div className="barber-form-actions">
+                  <button type="button" className="ba-sec" onClick={() => setIsProfileOpen(false)} disabled={isSaving}>Bekor qilish</button>
+                  <button type="button" className="ba-pri" onClick={() => void handleProfileSave()} disabled={isSaving}>{isSaving ? "Saqlanmoqda..." : "Saqlash"}</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        ) : null}
+
+        <div className="ub-top-actions">
+          <button type="button" className="ub-av-btn" onClick={() => setIsProfileOpen(true)} aria-label="Profil">
+            {currentAvatar ? (
+              <img src={currentAvatar} alt={userName} className="ub-av-img" />
+            ) : (
+              <span className="ub-av-placeholder">{getInitials(userName)}</span>
+            )}
+          </button>
+          <button className="ub-logout" onClick={onLogout}>Chiqish</button>
+        </div>
+
+        <header className="ub-page-head">
+          <div>
+            <div className="ub-page-eyebrow">Foydalanuvchi paneli</div>
+            <h1 className="ub-page-title">Xush kelibsiz, {userName || "Mehmon"}</h1>
+            <p className="ub-page-sub">Qulay bron qilish, tezkor tanlov va real vaqtdagi bo'sh vaqtlar.</p>
+          </div>
+
+          <div className="ub-kpi-grid">
+            <div className="ub-kpi-item">
+              <span>Sartaroshlar</span>
+              <strong>{barbers.length}</strong>
+            </div>
+            <div className="ub-kpi-item">
+              <span>O'rtacha reyting</span>
+              <strong>{averageRating}</strong>
+            </div>
+            <div className="ub-kpi-item">
+              <span>Eng tajribali</span>
+              <strong>{maxExperience}+ yil</strong>
+            </div>
+          </div>
+        </header>
+
+        <div className="ub-process">
+          {BOOKING_STEPS.map((bookingStep, index) => {
+            const stepNumber = index + 1;
+            const state =
+              stepNumber === currentStepNumber
+                ? "active"
+                : stepNumber < currentStepNumber
+                  ? "done"
+                  : "idle";
+
+            return (
+              <div key={bookingStep.id} className={`ub-process-step ${state}`}>
+                <span>{stepNumber}</span>
+                <strong>{bookingStep.label}</strong>
+              </div>
+            );
+          })}
+        </div>
+
+        {errorMessage ? <div className="ub-error">{errorMessage}</div> : null}
+
+        {step === "barbers" ? (
+          <section className="ub-card ub-card-barbers">
+            <div className="ub-barbers-layout">
+              <div className="ub-barbers-intro">
+                <div className="ub-logo-row">
+                  <div className="ub-logo-icon"><FiScissors /></div>
+                  <div className="ub-brand">SHARP CUTS</div>
+                </div>
+
+                <div className="ub-welcome">
+                  <span>QAYTGANINGIZDAN XURSANDMIZ</span>
+                  <strong>{userName || "Mehmon"}</strong>
+                </div>
+
+                <h2 className="ub-title">
+                  O'zingizga mos
+                  <strong>bronni tanlang</strong>
+                </h2>
+                <p>Eng yaxshi ustani tanlang, qulay vaqtni band qiling va navbatingizni oldindan belgilang.</p>
+
+                <div className="ub-benefits">
+                  <div className="ub-benefit-card">
+                    <span><FiZap /> Tezkor bron</span>
+                    <strong>1 daqiqadan kam vaqtda</strong>
+                  </div>
+                  <div className="ub-benefit-card">
+                    <span><FiShield /> Ishonchli ustalar</span>
+                    <strong>yuqori reytingli mutaxassislar</strong>
+                  </div>
+                  <div className="ub-benefit-card">
+                    <span><FiClock /> Jonli bo'sh vaqtlar</span>
+                    <strong>har doim yangilanib turadi</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ub-barbers-list-wrap">
+                <div className="ub-section-title">MAVJUD SARTAROSHLAR</div>
+
+                <div className="ub-search-wrap">
+                  <input
+                    className="ub-search-input"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Sartarosh yoki xizmat bo'yicha qidiring..."
+                  />
+                </div>
+
+                <div className="ub-barber-list">
+                  {filteredBarbers.map((barber) => (
+                    <button key={barber.id} className="ub-barber-row" onClick={() => void pickBarber(barber)}>
+                      {barber.photo_url ? (
+                        <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
+                      ) : (
+                        <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(barber.name)}</div>
+                      )}
+
+                      <div className="ub-barber-info">
+                        <strong>{barber.name}</strong>
+                        <span>{barber.specialty}</span>
+                        <small>
+                          <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
+                          <span className="ub-meta-sep">·</span>
+                          <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil tajriba</span>
+                        </small>
+                      </div>
+
+                      <span className="ub-go"><FiArrowRight /></span>
+                    </button>
+                  ))}
+                  {!loading && filteredBarbers.length === 0 ? <div className="ub-empty">Mos sartarosh topilmadi.</div> : null}
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {step === "times" && selectedBarber ? (
+          <section className="ub-card">
+          <div className="ub-step-head">
+            <button className="ub-back" onClick={() => setStep("barbers")}>←</button>
+            <div>
+              <h3>Vaqtni tanlang</h3>
+              <p>{selectedBarber.name} uchun bo'sh slotlar</p>
+            </div>
+          </div>
+
+          <div className="ub-summary">
+            {selectedBarber.photo_url ? (
+              <img src={selectedBarber.photo_url} alt={selectedBarber.name} className="ub-barber-avatar" />
+            ) : (
+              <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(selectedBarber.name)}</div>
+            )}
+            <div>
+              <strong>{selectedBarber.name}</strong>
+              <span>{selectedBarber.specialty}</span>
+            </div>
+          </div>
+
+          <div className="ub-date-nav">
+            <button onClick={() => void shiftDate(-1)}>‹</button>
+            <div>
+              <strong>Bugun</strong>
+              <span>{humanDate}</span>
+            </div>
+            <button onClick={() => void shiftDate(1)}>›</button>
+          </div>
+
+          <div className="ub-section-title">MAVJUD VAQTLAR</div>
+          <div className="ub-slots-grid">
+            {(availability?.slots || []).map((slot) => {
+              const isSelected = selectedTime === slot.time;
+              const isBooked = slot.status === "booked";
+              return (
+                <button
+                  key={slot.time}
+                  className={`ub-slot ${isSelected ? "selected" : ""} ${isBooked ? "booked" : ""}`}
+                  disabled={isBooked}
+                  onClick={() => setSelectedTime(slot.time)}
+                >
+                  {slot.time}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="ub-slot-legend">
+            <span>● Tanlangan</span>
+            <span>○ Bo'sh</span>
+            <span>◌ Band</span>
+          </div>
+
+          <button className="ub-primary" onClick={continueToDetails} disabled={!selectedTime || loading}>
+            Davom etish — {selectedTime || "--"}
+          </button>
+          </section>
+        ) : null}
+
+        {step === "details" && selectedBarber ? (
+          <section className="ub-card">
+          <div className="ub-step-head">
+            <button className="ub-back" onClick={() => setStep("times")}>←</button>
+            <div>
+              <h3>Ma'lumotlaringiz</h3>
+              <p>Yakunlash uchun ma'lumotni tekshiring</p>
+            </div>
+          </div>
+
+          <div className="ub-booking-summary">
+            <div className="ub-summary-row">
+              {selectedBarber.photo_url ? (
+                <img src={selectedBarber.photo_url} alt={selectedBarber.name} className="ub-barber-avatar" />
+              ) : (
+                <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(selectedBarber.name)}</div>
+              )}
+              <div>
+                <strong>{selectedBarber.name}</strong>
+                <span>{selectedBarber.specialty}</span>
+              </div>
+            </div>
+            <div className="ub-inline-info"><FiCalendar /> {humanDate}</div>
+            <div className="ub-inline-info"><FiClock /> {selectedTime}</div>
+          </div>
+
+          <label className="ub-field">
+            <span>To'liq ism</span>
+            <input value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Ismingizni kiriting" />
+          </label>
+
+          <label className="ub-field">
+            <span>Telefon raqam</span>
+            <input value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="+998 90 123 45 67" />
+          </label>
+
+          <small className="ub-help">Bron vaqtiga yaqin eslatma yuboramiz.</small>
+
+          <button className="ub-primary" onClick={() => void submitBooking()} disabled={loading}>
+            {loading ? "Tasdiqlanmoqda..." : "Bronni tasdiqlash"}
+          </button>
+          </section>
+        ) : null}
+
+        {step === "success" && confirmation ? (
+          <section className="ub-card ub-success-card">
+          <div className="ub-success-icon-wrap">
+            <div className="ub-success-icon"><FiCheck /></div>
+            <span className="ub-success-badge"><FiCheck /></span>
+          </div>
+          <h3>Barchasi tayyor!</h3>
+          <p>Broningiz muvaffaqiyatli tasdiqlandi</p>
+
+          <div className="ub-success-summary">
+            <div className="ub-success-row">
+              <span>BRON RAQAMI</span>
+              <strong>{confirmation.booking_id}</strong>
+              <em>Tasdiqlandi</em>
+            </div>
+
+            <div className="ub-summary-row">
+              {confirmation.barber_photo_url ? (
+                <img src={confirmation.barber_photo_url} alt={confirmation.barber_name} className="ub-barber-avatar" />
+              ) : (
+                <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(confirmation.barber_name)}</div>
+              )}
+              <div>
+                <strong>{confirmation.barber_name}</strong>
+                <span>{confirmation.barber_specialty}</span>
+              </div>
+            </div>
+
+            <div>{formatHumanDate(confirmation.appointment_date)}</div>
+            <div>{confirmation.appointment_time}</div>
+            <div>Mijoz: {confirmation.client_name}</div>
+          </div>
+
+          {shareMessage ? <div className="ub-share-note">{shareMessage}</div> : null}
+
+          <button className="ub-primary" onClick={() => void resetFlow()}>
+            Yana bron qilish
+          </button>
+
+          <button className="ub-secondary" onClick={() => void shareBooking()}>
+            <FiShare2 /> Tafsilotlarni ulashish
+          </button>
+          </section>
+        ) : null}
+      </div>
+    </div>
+  );
+}
