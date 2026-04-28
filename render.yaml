@@ -1,0 +1,26 @@
+services:
+  # Backend FastAPI service
+  - type: web
+    name: barber-backend
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        scope: runtime
+      - key: CORS_ORIGINS
+        value: "https://barber-frontend.onrender.com"
+      - key: JWT_SECRET
+        scope: runtime
+      - key: STRIPE_SECRET_KEY
+        scope: runtime
+
+  # Frontend static service
+  - type: static_site
+    name: barber-frontend
+    staticPublishPath: dist
+    buildCommand: "npm install && npx vite build"
+    envVars:
+      - key: VITE_API_URL
+        value: "https://barber-backend.onrender.com"
