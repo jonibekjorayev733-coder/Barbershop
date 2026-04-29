@@ -1,7 +1,17 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { barberStatusLabel, topCopy } from "../copy";
 import { ICal, IPhone, IPlus, ISciss, IStar, ITrend, IUsers } from "../icons";
-import { createBarber, getBarbers, updateBarber, deleteBarber, type BarberApi, type BarberApiPayload } from "../api";
+import {
+  assignBarberToBarbershop,
+  createBarber,
+  deleteBarber,
+  getBarbers,
+  getPublicBarbershops,
+  updateBarber,
+  type BarberApi,
+  type BarberApiPayload,
+  type PublicBarbershopMapItemApi,
+} from "../api";
 import { StatCard } from "./StatCard";
 import type { BarberStatus } from "../types";
 import { subscribeProfileSync } from "../../../lib/profileSync";
@@ -110,6 +120,10 @@ export function BarbersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BarberApi | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shops, setShops] = useState<PublicBarbershopMapItemApi[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
+  const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const isEditing = editingId !== null;
 
@@ -133,8 +147,21 @@ export function BarbersPage() {
     }
   };
 
+  const loadShops = async () => {
+    try {
+      const rows = await getPublicBarbershops();
+      setShops(rows);
+      if (rows.length > 0 && selectedShopId === null) {
+        setSelectedShopId(rows[0].id);
+      }
+    } catch {
+      return;
+    }
+  };
+
   useEffect(() => {
     void loadBarbers();
+    void loadShops();
   }, []);
 
   useEffect(() => {
@@ -174,6 +201,25 @@ export function BarbersPage() {
       showToast("error", message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleAssignBarber = async () => {
+    if (!selectedShopId || !selectedBarberId) {
+      showToast("error", "Salon va sartaroshni tanlang.");
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      await assignBarberToBarbershop(selectedShopId, selectedBarberId);
+      await Promise.all([loadBarbers(), loadShops()]);
+      showToast("success", "Sartarosh salonга biriktirildi.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Biriktirishda xatolik yuz berdi.";
+      showToast("error", message);
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -297,6 +343,48 @@ export function BarbersPage() {
       </div>
 
       {errorMessage ? <div className="barber-alert">{errorMessage}</div> : null}
+
+      <section className="barber-assign-panel">
+        <div className="barber-assign-head">
+          <h3>Sartaroshni sartaroshxonaga qo'shish</h3>
+          <p>Admin paneldan salon tanlab, sartaroshni biriktirasiz.</p>
+        </div>
+        <div className="barber-assign-grid">
+          <label className="barber-field">
+            <span>Sartaroshxona</span>
+            <select
+              value={selectedShopId ?? ""}
+              onChange={(event) => setSelectedShopId(Number(event.target.value) || null)}
+            >
+              <option value="">Tanlang</option>
+              {shops.map((shop) => (
+                <option key={shop.id} value={shop.id}>
+                  {shop.name} ({shop.barber_count} ta)
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="barber-field">
+            <span>Sartarosh</span>
+            <select
+              value={selectedBarberId ?? ""}
+              onChange={(event) => setSelectedBarberId(Number(event.target.value) || null)}
+            >
+              <option value="">Tanlang</option>
+              {barbers.map((barber) => (
+                <option key={barber.id} value={barber.id}>
+                  {barber.name} {barber.barbershop_id ? "(biriktirilgan)" : "(erkin)"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button type="button" className="ba-pri barber-assign-btn" onClick={() => void handleAssignBarber()} disabled={isAssigning}>
+            {isAssigning ? "Biriktirilmoqda..." : "Salonga biriktirish"}
+          </button>
+        </div>
+      </section>
 
       <div className="sc-row">
         <StatCard

@@ -61,8 +61,27 @@ class Barber(Base):
     work_directions = Column(String, nullable=True)
     service_price = Column(Float, default=40000)
     discount_percent = Column(Float, default=0)
+    barbershop_id = Column(Integer, ForeignKey("barbershop.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=tashkent_now)
     updated_at = Column(DateTime, default=tashkent_now, onupdate=tashkent_now)
+
+    barbershop = relationship("Barbershop", back_populates="barbers")
+
+
+class Barbershop(Base):
+    __tablename__ = "barbershop"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    address = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    photo_url = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=tashkent_now)
+    updated_at = Column(DateTime, default=tashkent_now, onupdate=tashkent_now)
+
+    barbers = relationship("Barber", back_populates="barbershop")
 
 
 class BarberAppointment(Base):

@@ -15,6 +15,7 @@ import {
 import { LoginPage } from "./features/auth/LoginPage";
 import { BarberPanel } from "./features/barber-panel/BarberPanel";
 import { UserPanel } from "./features/user-panel/UserPanel";
+import { PublicLandingPage } from "./features/public/PublicLandingPage";
 import type { Page } from "./features/admin-panel/types";
 import { subscribeProfileSync } from "./lib/profileSync";
 
@@ -266,7 +267,7 @@ export default function App() {
   }, [session?.userId, session?.role]);
 
   if (!session) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <PublicLandingPage onLogin={handleLogin} />;
   }
 
   if (isBarber) {

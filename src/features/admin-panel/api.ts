@@ -134,6 +134,39 @@ export interface UserBookingBarberApi {
   discount_percent?: number;
 }
 
+export interface PublicBarberPreviewApi {
+  id: number;
+  name: string;
+  specialty: string;
+  photo_url?: string | null;
+  years_experience?: number;
+  rating?: number;
+}
+
+export interface PublicBarbershopMapItemApi {
+  id: number;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  photo_url?: string | null;
+  description?: string | null;
+  distance_km?: number | null;
+  barber_count: number;
+  barbers: PublicBarberPreviewApi[];
+}
+
+export type PublicBarbershopDetailApi = PublicBarbershopMapItemApi;
+
+export interface BarbershopCreateUpdatePayload {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  photo_url?: string;
+  description?: string;
+}
+
 export interface BarberAvailabilitySlotApi {
   time: string;
   status: "available" | "booked";
@@ -206,6 +239,7 @@ export interface BarberApi {
   username?: string;
   password?: string;
   bio?: string;
+  barbershop_id?: number | null;
 }
 
 export interface BarberApiPayload {
@@ -449,4 +483,63 @@ export async function getBookings(options?: { date?: string; status?: "all" | "p
   }
   const query = params.toString();
   return requestJson<AdminBookingApi[]>(`/bookings/${query ? `?${query}` : ""}`);
+}
+
+export async function getPublicBarbershops(options?: {
+  lat?: number;
+  lng?: number;
+  scope?: "near" | "far";
+}): Promise<PublicBarbershopMapItemApi[]> {
+  const params = new URLSearchParams();
+  if (typeof options?.lat === "number") {
+    params.set("lat", String(options.lat));
+  }
+  if (typeof options?.lng === "number") {
+    params.set("lng", String(options.lng));
+  }
+  if (options?.scope) {
+    params.set("scope", options.scope);
+  }
+
+  const query = params.toString();
+  return requestJson<PublicBarbershopMapItemApi[]>(`/public/barbershops${query ? `?${query}` : ""}`);
+}
+
+export async function getPublicBarbershopDetail(
+  shopId: number,
+  options?: { lat?: number; lng?: number },
+): Promise<PublicBarbershopDetailApi> {
+  const params = new URLSearchParams();
+  if (typeof options?.lat === "number") {
+    params.set("lat", String(options.lat));
+  }
+  if (typeof options?.lng === "number") {
+    params.set("lng", String(options.lng));
+  }
+  const query = params.toString();
+  return requestJson<PublicBarbershopDetailApi>(`/public/barbershops/${shopId}${query ? `?${query}` : ""}`);
+}
+
+export async function createBarbershop(payload: BarbershopCreateUpdatePayload): Promise<PublicBarbershopMapItemApi> {
+  return requestJson<PublicBarbershopMapItemApi>("/barbershops", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateBarbershop(
+  shopId: number,
+  payload: BarbershopCreateUpdatePayload,
+): Promise<PublicBarbershopMapItemApi> {
+  return requestJson<PublicBarbershopMapItemApi>(`/barbershops/${shopId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function assignBarberToBarbershop(shopId: number, barberId: number): Promise<PublicBarbershopDetailApi> {
+  return requestJson<PublicBarbershopDetailApi>(`/barbershops/${shopId}/assign-barber`, {
+    method: "POST",
+    body: JSON.stringify({ barber_id: barberId }),
+  });
 }

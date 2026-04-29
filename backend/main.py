@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
 import calendar
+import math
 import logging
 import os
 import json
@@ -482,6 +483,98 @@ def can_subscribe_channel(channel: str, auth_payload: dict) -> bool:
         return role == "teacher" and token_user_id == channel_id
 
     return False
+
+
+def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(d_lat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return r * c
+
+
+def serialize_public_barber(barber: models.Barber) -> dict:
+    return {
+        "id": barber.id,
+        "name": barber.name,
+        "specialty": barber.specialty,
+        "photo_url": barber.photo_url,
+        "years_experience": barber.years_experience,
+        "rating": float(barber.rating or 0),
+    }
+
+
+def serialize_public_barbershop(shop: models.Barbershop, user_lat: Optional[float], user_lon: Optional[float]) -> dict:
+    distance_km = None
+    if user_lat is not None and user_lon is not None:
+        distance_km = round(haversine_distance_km(user_lat, user_lon, shop.latitude, shop.longitude), 2)
+
+    active_barbers = [item for item in shop.barbers if item.status != "off"]
+
+    return {
+        "id": shop.id,
+        "name": shop.name,
+        "address": shop.address,
+        "latitude": shop.latitude,
+        "longitude": shop.longitude,
+        "photo_url": shop.photo_url,
+        "description": shop.description,
+        "distance_km": distance_km,
+        "barber_count": len(active_barbers),
+        "barbers": [serialize_public_barber(item) for item in active_barbers],
+    }
+
+
+def seed_barbershops_if_empty(db: Session) -> None:
+    existing = db.query(models.Barbershop).count()
+    if existing > 0:
+        return
+
+    seeds = [
+        models.Barbershop(
+            name="Chilonzor Premium Cuts",
+            address="Chilonzor, Toshkent",
+            latitude=41.2752,
+            longitude=69.2036,
+            photo_url="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80",
+            description="Zamonaviy uslub, premium xizmat va toza muhit.",
+        ),
+        models.Barbershop(
+            name="Yunusobod Gentlemen Club",
+            address="Yunusobod, Toshkent",
+            latitude=41.3631,
+            longitude=69.2882,
+            photo_url="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80",
+            description="Klassik va modern kesimlar, tajribali ustalar.",
+        ),
+        models.Barbershop(
+            name="Sergeli Urban Barber",
+            address="Sergeli, Toshkent",
+            latitude=41.2266,
+            longitude=69.2197,
+            photo_url="https://images.unsplash.com/photo-1622287162716-f311baa1a2b8?auto=format&fit=crop&w=1200&q=80",
+            description="Tezkor bron va qulay narxlar bilan xizmat.",
+        ),
+    ]
+
+    for row in seeds:
+        db.add(row)
+    db.commit()
+
+    db_barbers = db.query(models.Barber).order_by(models.Barber.id.asc()).all()
+    shops = db.query(models.Barbershop).order_by(models.Barbershop.id.asc()).all()
+    if not shops:
+        return
+
+    for index, barber in enumerate(db_barbers):
+        if barber.barbershop_id is None:
+            barber.barbershop_id = shops[index % len(shops)].id
+
+    db.commit()
 
 
 def notification_to_payload(notification: models.Notification) -> dict:
@@ -1258,6 +1351,30 @@ async def notifications_ws(websocket: WebSocket, user_id: int):
 
 @app.websocket("/ws/events/{channel}")
 async def realtime_events_ws(websocket: WebSocket, channel: str):
+    if channel == "public-map":
+        if ws_total_connections() >= MAX_WS_TOTAL_CONNECTIONS:
+            inc_metric("ws_rejected")
+            await websocket.close(code=1013, reason="Server busy")
+            return
+
+        connected = await realtime_manager.connect(channel, websocket)
+        if not connected:
+            return
+
+        try:
+            while True:
+                msg = await websocket.receive_text()
+                if msg == "ping":
+                    try:
+                        await websocket.send_text("pong")
+                    except Exception:
+                        pass
+        except WebSocketDisconnect:
+            realtime_manager.disconnect(channel, websocket)
+        except Exception:
+            realtime_manager.disconnect(channel, websocket)
+        return
+
     auth_payload = await authenticate_ws(websocket)
     if not auth_payload:
         return
@@ -1360,6 +1477,19 @@ def ensure_legacy_schema_compatibility():
         )
         """,
         """
+        CREATE TABLE IF NOT EXISTS barbershop (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR NOT NULL,
+            address VARCHAR NOT NULL,
+            latitude FLOAT NOT NULL,
+            longitude FLOAT NOT NULL,
+            photo_url VARCHAR NULL,
+            description VARCHAR NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
+        """
         CREATE TABLE IF NOT EXISTS lesson (
             id SERIAL PRIMARY KEY,
             course_id INTEGER NOT NULL,
@@ -1396,6 +1526,7 @@ def ensure_legacy_schema_compatibility():
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS work_directions VARCHAR",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS service_price FLOAT DEFAULT 40000",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS discount_percent FLOAT DEFAULT 0",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS barbershop_id INTEGER NULL",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS rating_votes INTEGER DEFAULT 0",
         "UPDATE admin SET role = 'admin' WHERE role IS NULL OR role = ''",
         "UPDATE teacher SET role = 'teacher' WHERE role IS NULL OR role = ''",
@@ -1523,6 +1654,7 @@ async def startup_schema_compatibility():
         models.Admin.__table__.create(bind=engine, checkfirst=True)
         models.Teacher.__table__.create(bind=engine, checkfirst=True)
         models.Student.__table__.create(bind=engine, checkfirst=True)
+        models.Barbershop.__table__.create(bind=engine, checkfirst=True)
         models.Barber.__table__.create(bind=engine, checkfirst=True)
         models.BarberAppointment.__table__.create(bind=engine, checkfirst=True)
     except Exception as startup_error:
@@ -2338,6 +2470,7 @@ def create_barber(barber: schemas.BarberCreate, db: Session = Depends(get_db)):
         password=hash_password(raw_password),
         role="barber",
         bio=barber.bio,
+        barbershop_id=barber.barbershop_id,
     )
     db.add(db_barber)
     db.commit()
@@ -2382,6 +2515,7 @@ def update_barber(barber_id: int, barber: schemas.BarberUpdate, db: Session = De
         db_barber.password = hash_password(incoming_password)
 
     db_barber.bio = barber.bio
+    db_barber.barbershop_id = barber.barbershop_id
 
     db.commit()
     db.refresh(db_barber)
@@ -2618,6 +2752,103 @@ def get_user_booking_barbers(db: Session = Depends(get_db)):
         }
         for item in rows
     ]
+
+
+@app.get("/public/barbershops", response_model=List[schemas.PublicBarbershopMapItem])
+def get_public_barbershops(
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    scope: str = "near",
+    db: Session = Depends(get_db),
+):
+    seed_barbershops_if_empty(db)
+    rows = db.query(models.Barbershop).order_by(models.Barbershop.id.asc()).all()
+    payload = [serialize_public_barbershop(item, lat, lng) for item in rows]
+
+    if lat is not None and lng is not None:
+        payload.sort(key=lambda row: row.get("distance_km") if row.get("distance_km") is not None else 99999)
+        normalized_scope = (scope or "near").strip().lower()
+        if normalized_scope == "near":
+            payload = [item for item in payload if (item.get("distance_km") or 99999) <= 12.0]
+        elif normalized_scope == "far":
+            payload = [item for item in payload if (item.get("distance_km") or 0) > 12.0]
+
+    return payload
+
+
+@app.get("/public/barbershops/{shop_id}", response_model=schemas.PublicBarbershopDetail)
+def get_public_barbershop_detail(shop_id: int, lat: Optional[float] = None, lng: Optional[float] = None, db: Session = Depends(get_db)):
+    seed_barbershops_if_empty(db)
+    shop = db.query(models.Barbershop).filter(models.Barbershop.id == shop_id).first()
+    if shop is None:
+        raise HTTPException(status_code=404, detail="Sartaroshxona topilmadi")
+
+    return serialize_public_barbershop(shop, lat, lng)
+
+
+@app.post("/barbershops", response_model=schemas.PublicBarbershopMapItem)
+def create_barbershop(payload: schemas.BarbershopCreateUpdate, db: Session = Depends(get_db)):
+    shop = models.Barbershop(
+        name=payload.name.strip(),
+        address=payload.address.strip(),
+        latitude=float(payload.latitude),
+        longitude=float(payload.longitude),
+        photo_url=(payload.photo_url or "").strip() or None,
+        description=(payload.description or "").strip() or None,
+    )
+    db.add(shop)
+    db.commit()
+    db.refresh(shop)
+
+    body = serialize_public_barbershop(shop, None, None)
+    schedule_realtime("public-map", "barbershop.created", body)
+    return body
+
+
+@app.put("/barbershops/{shop_id}", response_model=schemas.PublicBarbershopMapItem)
+def update_barbershop(shop_id: int, payload: schemas.BarbershopCreateUpdate, db: Session = Depends(get_db)):
+    shop = db.query(models.Barbershop).filter(models.Barbershop.id == shop_id).first()
+    if shop is None:
+        raise HTTPException(status_code=404, detail="Sartaroshxona topilmadi")
+
+    shop.name = payload.name.strip()
+    shop.address = payload.address.strip()
+    shop.latitude = float(payload.latitude)
+    shop.longitude = float(payload.longitude)
+    shop.photo_url = (payload.photo_url or "").strip() or None
+    shop.description = (payload.description or "").strip() or None
+    shop.updated_at = now_tashkent()
+
+    db.commit()
+    db.refresh(shop)
+
+    body = serialize_public_barbershop(shop, None, None)
+    schedule_realtime("public-map", "barbershop.updated", body)
+    return body
+
+
+@app.post("/barbershops/{shop_id}/assign-barber", response_model=schemas.PublicBarbershopDetail)
+def assign_barber_to_barbershop(
+    shop_id: int,
+    payload: schemas.BarbershopAssignBarberRequest,
+    db: Session = Depends(get_db),
+):
+    shop = db.query(models.Barbershop).filter(models.Barbershop.id == shop_id).first()
+    if shop is None:
+        raise HTTPException(status_code=404, detail="Sartaroshxona topilmadi")
+
+    barber = db.query(models.Barber).filter(models.Barber.id == payload.barber_id).first()
+    if barber is None:
+        raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
+
+    barber.barbershop_id = shop_id
+    barber.updated_at = now_tashkent()
+    db.commit()
+    db.refresh(shop)
+
+    body = serialize_public_barbershop(shop, None, None)
+    schedule_realtime("public-map", "barbershop.assigned", body)
+    return body
 
 
 @app.get("/user/barbers/{barber_id}/availability", response_model=schemas.BarberAvailabilityResponse)

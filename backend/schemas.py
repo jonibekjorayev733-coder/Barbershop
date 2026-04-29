@@ -86,6 +86,7 @@ class BarberBase(BaseModel):
     years_experience: int = 1
     username: Optional[str] = None
     bio: Optional[str] = None
+    barbershop_id: Optional[int] = None
 
 
 class BarberCreate(BarberBase):
@@ -150,6 +151,45 @@ class UserBookingBarber(BaseModel):
     color: Optional[str] = None
     service_price: Optional[float] = 0
     discount_percent: Optional[float] = 0
+
+
+class PublicBarberPreview(BaseModel):
+    id: int
+    name: str
+    specialty: str
+    photo_url: Optional[str] = None
+    years_experience: Optional[int] = 0
+    rating: Optional[float] = 0
+
+
+class PublicBarbershopMapItem(BaseModel):
+    id: int
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+    photo_url: Optional[str] = None
+    description: Optional[str] = None
+    distance_km: Optional[float] = None
+    barber_count: int = 0
+    barbers: List[PublicBarberPreview] = []
+
+
+class PublicBarbershopDetail(PublicBarbershopMapItem):
+    pass
+
+
+class BarbershopCreateUpdate(BaseModel):
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+    photo_url: Optional[str] = None
+    description: Optional[str] = None
+
+
+class BarbershopAssignBarberRequest(BaseModel):
+    barber_id: int
 
 
 class TimeSlotAvailability(BaseModel):
