@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   approveBarberAppointment,
   getBarberAppointments,
   getBarberDashboard,
+  getBarberNotifications,
+  getBarberProfile,
+  markBarberNotificationRead,
   rejectBarberAppointment,
   sendBarberAppointmentSms,
   updateBarberProfile,
   type BarberAppointmentApi,
   type BarberDashboardApi,
+  type BarberNotificationApi,
 } from "../admin-panel/api";
 import { fileToOptimizedAvatarDataUrl } from "../../lib/avatar";
 import { emitProfileSync } from "../../lib/profileSync";
@@ -23,23 +27,42 @@ interface BarberPanelProps {
   onLogout: () => void;
 }
 
-type BarberView = "dashboard" | "schedule";
+type BarberView = "dashboard" | "schedule" | "profile" | "notifications";
 type ScheduleFilter = "all" | "pending" | "completed";
+
+interface SmsOverlayItem {
+  id: number;
+  title: string;
+  message: string;
+}
+
+interface BarberNotificationRealtimePayload {
+  id?: number;
+  title?: string;
+  message?: string;
+  type?: string;
+  read?: boolean;
+  created_at?: string;
+}
 
 export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvatar, onProfileUpdated, onLogout }: BarberPanelProps) {
   const [view, setView] = useState<BarberView>("dashboard");
   const [dashboard, setDashboard] = useState<BarberDashboardApi | null>(null);
   const [appointments, setAppointments] = useState<BarberAppointmentApi[]>([]);
+  const [notifications, setNotifications] = useState<BarberNotificationApi[]>([]);
   const [filter, setFilter] = useState<ScheduleFilter>("all");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
+  const [smsOverlays, setSmsOverlays] = useState<SmsOverlayItem[]>([]);
 
-  // --- Profile drawer state ---
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profName, setProfName] = useState(barberName);
   const [profEmail, setProfEmail] = useState(barberEmail);
   const [profPassword, setProfPassword] = useState("");
+  const [profSpecialty, setProfSpecialty] = useState("");
+  const [profDirections, setProfDirections] = useState("");
+  const [profServicePrice, setProfServicePrice] = useState("");
+  const [profDiscountPercent, setProfDiscountPercent] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(barberAvatar ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [profileToast, setProfileToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -53,75 +76,59 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
   const showProfileToast = (type: "success" | "error", message: string) => {
     setProfileToast({ type, message });
-    window.setTimeout(() => setProfileToast(null), 3200);
+    window.setTimeout(() => setProfileToast(null), 3000);
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    void (async () => {
-      try {
-        const result = await fileToOptimizedAvatarDataUrl(file);
-        setAvatarPreview(result);
-      } catch (error) {
-        showProfileToast("error", error instanceof Error ? error.message : "Rasm tayyorlanmadi.");
-      }
-    })();
-  };
-
-  const handleProfileSave = async () => {
-    const trimName = profName.trim();
-    const trimEmail = profEmail.trim().toLowerCase();
-    if (!trimName || !trimEmail) { showProfileToast("error", "Ism va emailni to'ldiring."); return; }
-    try {
-      setIsSaving(true);
-      const updated = await updateBarberProfile(barberId, {
-        name: trimName,
-        email: trimEmail,
-        password: profPassword.trim() || undefined,
-        photo_url: avatarPreview || undefined,
-      });
-      onProfileUpdated?.({ name: updated.name, email: updated.email, avatar: updated.photo_url });
-      emitProfileSync({ entityType: "barber", entityId: barberId, name: updated.name, email: updated.email, avatar: updated.photo_url });
-      setProfPassword("");
-      setIsProfileOpen(false);
-      showProfileToast("success", "Profil yangilandi.");
-    } catch (err) {
-      showProfileToast("error", err instanceof Error ? err.message : "Saqlashda xatolik.");
-    } finally {
-      setIsSaving(false);
+  const getInitials = (nameValue: string) => {
+    const chunks = nameValue.split(" ").filter(Boolean).slice(0, 2);
+    if (chunks.length === 0) {
+      return "B";
     }
+    return chunks.map((chunk) => chunk[0]?.toUpperCase() ?? "").join("");
   };
 
-  const getInitials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("") || "B";
-
-  const todayDate = useMemo(() => {
-    return getTashkentTodayISO();
-  }, []);
-
-  const humanDate = useMemo(() => {
-    return formatNowInTashkent("uz-UZ", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
-  }, []);
+  const todayDate = useMemo(() => getTashkentTodayISO(), []);
+  const humanDate = useMemo(
+    () =>
+      formatNowInTashkent("uz-UZ", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+    [],
+  );
 
   const loadDashboard = async () => {
     const data = await getBarberDashboard(barberId);
     setDashboard(data);
   };
 
-  const loadAppointments = async (status: ScheduleFilter) => {
-    const rows = await getBarberAppointments(barberId, { status, date: todayDate });
+  const loadAppointments = async (statusValue: ScheduleFilter) => {
+    const rows = await getBarberAppointments(barberId, { status: statusValue, date: todayDate });
     setAppointments(rows);
+  };
+
+  const loadProfile = async () => {
+    const profile = await getBarberProfile(barberId);
+    setProfName(profile.name || barberName);
+    setProfEmail(profile.email || barberEmail);
+    setAvatarPreview(profile.photo_url ?? barberAvatar ?? null);
+    setProfSpecialty(profile.specialty ?? "");
+    setProfDirections(profile.work_directions ?? "");
+    setProfServicePrice(profile.service_price != null ? String(Math.round(profile.service_price)) : "");
+    setProfDiscountPercent(profile.discount_percent != null ? String(Math.round(profile.discount_percent)) : "0");
+  };
+
+  const loadNotifications = async () => {
+    const rows = await getBarberNotifications(barberId);
+    setNotifications(rows);
   };
 
   const bootstrap = async () => {
     try {
       setLoading(true);
       setErrorMessage(null);
-      await Promise.all([loadDashboard(), loadAppointments(filter)]);
+      await Promise.all([loadDashboard(), loadAppointments(filter), loadProfile(), loadNotifications()]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Sahifa yuklanmadi.");
     } finally {
@@ -137,12 +144,98 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     void loadAppointments(filter);
   }, [filter]);
 
+  const pushOverlay = (title: string, message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setSmsOverlays((prev) => [...prev, { id, title, message }].slice(-3));
+    window.setTimeout(() => {
+      setSmsOverlays((prev) => prev.filter((item) => item.id !== id));
+    }, 4500);
+  };
+
   useEffect(() => {
-    const unsubscribe = subscribeRealtimeChannel(`barber:${barberId}`, () => {
+    const unsubscribe = subscribeRealtimeChannel(`barber:${barberId}`, (payload) => {
+      if (payload.event === "barber.notification") {
+        const data = payload.data as BarberNotificationRealtimePayload;
+        if (data.id && data.title && data.message) {
+          const nextRow: BarberNotificationApi = {
+            id: data.id,
+            barber_id: barberId,
+            title: data.title,
+            message: data.message,
+            type: data.type || "barber_system",
+            read: !!data.read,
+            created_at: data.created_at,
+          };
+          setNotifications((prev) => [nextRow, ...prev.filter((item) => item.id !== nextRow.id)]);
+          pushOverlay(nextRow.title, nextRow.message);
+        }
+      }
+
       void Promise.all([loadDashboard(), loadAppointments(filter)]).catch(() => undefined);
     });
+
     return unsubscribe;
   }, [barberId, filter, todayDate]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const result = await fileToOptimizedAvatarDataUrl(file);
+        setAvatarPreview(result);
+      } catch (error) {
+        showProfileToast("error", error instanceof Error ? error.message : "Rasm tayyorlanmadi.");
+      }
+    })();
+  };
+
+  const handleProfileSave = async () => {
+    const trimName = profName.trim();
+    const trimEmail = profEmail.trim().toLowerCase();
+    if (!trimName || !trimEmail) {
+      showProfileToast("error", "Ism va emailni to'ldiring.");
+      return;
+    }
+
+    const parsedPrice = Number.parseFloat(profServicePrice || "0");
+    const parsedDiscount = Number.parseFloat(profDiscountPercent || "0");
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      showProfileToast("error", "Xizmat narxi noto'g'ri.");
+      return;
+    }
+    if (Number.isNaN(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100) {
+      showProfileToast("error", "Skidka foizi 0 dan 100 gacha bo'lishi kerak.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updated = await updateBarberProfile(barberId, {
+        name: trimName,
+        email: trimEmail,
+        password: profPassword.trim() || undefined,
+        photo_url: avatarPreview || undefined,
+        specialty: profSpecialty.trim() || undefined,
+        work_directions: profDirections.trim() || undefined,
+        service_price: parsedPrice,
+        discount_percent: parsedDiscount,
+      });
+
+      onProfileUpdated?.({ name: updated.name, email: updated.email, avatar: updated.photo_url });
+      emitProfileSync({ entityType: "barber", entityId: barberId, name: updated.name, email: updated.email, avatar: updated.photo_url });
+      setProfPassword("");
+      showProfileToast("success", "Profil muvaffaqiyatli saqlandi.");
+      await Promise.all([loadDashboard(), loadNotifications()]);
+    } catch (error) {
+      showProfileToast("error", error instanceof Error ? error.message : "Saqlashda xatolik.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const approveAppointment = async (appointmentId: number) => {
     try {
@@ -164,7 +257,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
       await rejectBarberAppointment(barberId, appointmentId);
       await Promise.all([loadDashboard(), loadAppointments(filter)]);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Appointment rad etilmadi.");
+      setErrorMessage(error instanceof Error ? error.message : "Bron rad etilmadi.");
     } finally {
       setIsUpdating(null);
     }
@@ -174,7 +267,8 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     try {
       setIsUpdating(appointmentId);
       setErrorMessage(null);
-      await sendBarberAppointmentSms(barberId, appointmentId);
+      const result = await sendBarberAppointmentSms(barberId, appointmentId);
+      pushOverlay("SMS holati", result.message);
       await Promise.all([loadDashboard(), loadAppointments(filter)]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "SMS yuborilmadi.");
@@ -183,64 +277,44 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     }
   };
 
+  const markNotificationRead = async (notificationId: number) => {
+    try {
+      const updated = await markBarberNotificationRead(barberId, notificationId);
+      setNotifications((prev) => prev.map((item) => (item.id === notificationId ? updated : item)));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Habarnoma yangilanmadi.");
+    }
+  };
+
   if (loading) {
     return <div className="bp-loading">Yuklanmoqda...</div>;
   }
 
   const currentAvatar = avatarPreview || barberAvatar;
-  const initials = getInitials(barberName);
+  const initials = getInitials(profName || barberName);
 
   return (
     <div className="bp-shell">
       {profileToast ? <div className={`ba-toast ba-toast-${profileToast.type}`}>{profileToast.message}</div> : null}
       {errorMessage ? <div className="bp-error">{errorMessage}</div> : null}
 
-      {/* Profile Drawer */}
-      {isProfileOpen ? (
-        <div className="admin-profile-overlay" onClick={() => { if (!isSaving) setIsProfileOpen(false); }}>
-          <aside className="admin-profile-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="barber-drawer-head">
-              <h3>Mening profilim</h3>
-              <button type="button" className="barber-drawer-close" onClick={() => { if (!isSaving) setIsProfileOpen(false); }}>×</button>
-            </div>
-            <div className="barber-form">
-              <div className="prof-avatar-section">
-                <div className="prof-avatar-wrap">
-                  {currentAvatar ? (
-                    <img src={currentAvatar} alt="Avatar" className="prof-avatar-img" />
-                  ) : (
-                    <div className="prof-avatar-placeholder">{initials}</div>
-                  )}
-                  <button type="button" className="prof-avatar-edit" onClick={() => fileInputRef.current?.click()} title="Rasm tanlash">✎</button>
-                </div>
-                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-                {currentAvatar && (
-                  <button type="button" className="prof-avatar-remove" onClick={() => { setAvatarPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
-                    Rasmni o'chirish
-                  </button>
-                )}
-              </div>
+      <div className="bp-sms-overlay-wrap">
+        {smsOverlays.map((item) => (
+          <div key={item.id} className="bp-sms-overlay">
+            <div className="bp-sms-head">Habarnoma</div>
+            <strong>{item.title}</strong>
+            <p>{item.message}</p>
+          </div>
+        ))}
+      </div>
 
-              <label className="barber-field"><span>Ism</span>
-                <input value={profName} onChange={(e) => setProfName(e.target.value)} placeholder="Ismingiz" />
-              </label>
-              <label className="barber-field"><span>Email</span>
-                <input type="email" value={profEmail} onChange={(e) => setProfEmail(e.target.value)} placeholder="Email" />
-              </label>
-              <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
-                <input type="password" value={profPassword} onChange={(e) => setProfPassword(e.target.value)} placeholder="Yangi parol" autoComplete="new-password" />
-              </label>
-              <div className="barber-form-actions">
-                <button type="button" className="ba-sec" onClick={() => setIsProfileOpen(false)} disabled={isSaving}>Bekor qilish</button>
-                <button type="button" className="ba-pri" onClick={() => void handleProfileSave()} disabled={isSaving}>{isSaving ? "Saqlanmoqda..." : "Saqlash"}</button>
-              </div>
-            </div>
-          </aside>
-        </div>
-      ) : null}
+      <div className="bp-panel-grid">
+        <aside className="bp-left-menu">
+          <button className={`bp-left-btn ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}>Profile</button>
+          <button className={`bp-left-btn ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>Habarnomalar</button>
+        </aside>
 
-      {view === "dashboard" ? (
-        <section className="bp-wrap">
+        <div className="bp-main-panel">
           <header className="bp-head">
             <div>
               <div className="bp-greet">Assalomu alaykum,</div>
@@ -248,199 +322,260 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
               <div className="bp-date">{humanDate}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button type="button" className="bp-av-btn" onClick={() => setIsProfileOpen(true)} aria-label="Profil">
+              <button className="bp-chip action" onClick={() => setView("dashboard")}>Boshqaruv</button>
+              <button className="bp-chip action" onClick={() => setView("schedule")}>Jadval</button>
+              <button type="button" className="bp-av-btn" onClick={() => setView("profile")} aria-label="Profil">
                 {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-av-img" /> : <span className="bp-av-placeholder">{initials}</span>}
               </button>
               <button className="bp-logout" onClick={onLogout}>Chiqish</button>
             </div>
           </header>
 
-          <div className="bp-dashboard-grid">
-            <div className="bp-main-col">
-              <div className="bp-stats">
-                <article className="bp-stat bp-stat-dark">
-                  <strong>{dashboard?.today_total ?? 0}</strong>
-                  <span>Bugun</span>
-                </article>
-                <article className="bp-stat bp-stat-soft">
-                  <strong>{dashboard?.today_done ?? 0}</strong>
-                  <span>Tasdiqlangan</span>
-                </article>
-                <article className="bp-stat">
-                  <strong>{dashboard?.today_pending ?? 0}</strong>
-                  <span>Kutilmoqda</span>
-                </article>
+          {view === "profile" ? (
+            <section className="bp-wrap bp-profile-page">
+              <h3>Mening profilim</h3>
+
+              <div className="prof-avatar-section">
+                <div className="prof-avatar-wrap">
+                  {currentAvatar ? <img src={currentAvatar} alt="Avatar" className="prof-avatar-img" /> : <div className="prof-avatar-placeholder">{initials}</div>}
+                  <button type="button" className="prof-avatar-edit" onClick={() => fileInputRef.current?.click()} title="Rasm tanlash">✎</button>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
+                {currentAvatar ? (
+                  <button type="button" className="prof-avatar-remove" onClick={() => { setAvatarPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                    Rasmni o'chirish
+                  </button>
+                ) : null}
               </div>
 
-              <div className="bp-progress-card">
-                <div className="bp-progress-top">
-                  <span>Bugungi holat</span>
-                  <span>
-                    {dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} yakunlangan
-                  </span>
+              <div className="barber-form">
+                <label className="barber-field"><span>Ism</span>
+                  <input value={profName} onChange={(event) => setProfName(event.target.value)} placeholder="Ismingiz" />
+                </label>
+                <label className="barber-field"><span>Email</span>
+                  <input type="email" value={profEmail} onChange={(event) => setProfEmail(event.target.value)} placeholder="Email" />
+                </label>
+                <label className="barber-field"><span>Yo'nalish (masalan: Fade, Soqol, Styling)</span>
+                  <input value={profSpecialty} onChange={(event) => setProfSpecialty(event.target.value)} placeholder="Asosiy yo'nalish" />
+                </label>
+                <label className="barber-field"><span>Nima bo'yicha ishlaysiz?</span>
+                  <input value={profDirections} onChange={(event) => setProfDirections(event.target.value)} placeholder="Mutaxassislik yo'nalishlari" />
+                </label>
+                <label className="barber-field"><span>Xizmat narxi (so'm)</span>
+                  <input value={profServicePrice} onChange={(event) => setProfServicePrice(event.target.value)} placeholder="Masalan: 50000" />
+                </label>
+                <label className="barber-field"><span>Skidka (%)</span>
+                  <input value={profDiscountPercent} onChange={(event) => setProfDiscountPercent(event.target.value)} placeholder="Masalan: 15" />
+                </label>
+                <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
+                  <input type="password" value={profPassword} onChange={(event) => setProfPassword(event.target.value)} placeholder="Yangi parol" autoComplete="new-password" />
+                </label>
+
+                <div className="barber-form-actions">
+                  <button type="button" className="ba-sec" onClick={() => setView("dashboard")} disabled={isSaving}>Ortga</button>
+                  <button type="button" className="ba-pri" onClick={() => void handleProfileSave()} disabled={isSaving}>{isSaving ? "Saqlanmoqda..." : "Saqlash"}</button>
                 </div>
-                <div className="bp-progress-track">
-                  <div className="bp-progress-fill" style={{ width: `${Math.round((dashboard?.progress_ratio ?? 0) * 100)}%` }} />
+              </div>
+            </section>
+          ) : null}
+
+          {view === "notifications" ? (
+            <section className="bp-wrap bp-notification-page">
+              <div className="bp-list-head">
+                <h4>Habarnomalar</h4>
+                <small>{notifications.length} ta</small>
+              </div>
+
+              <div className="bp-list">
+                {notifications.map((item) => (
+                  <article key={item.id} className="bp-item bp-item-notification">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>{item.message}</span>
+                      <small>
+                        {item.created_at
+                          ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              day: "2-digit",
+                              month: "2-digit",
+                            })
+                          : ""}
+                      </small>
+                    </div>
+                    {item.read ? (
+                      <em className="bp-chip done">Ko'rilgan</em>
+                    ) : (
+                      <button className="bp-chip action" onClick={() => void markNotificationRead(item.id)}>O'qildi</button>
+                    )}
+                  </article>
+                ))}
+                {notifications.length === 0 ? <div className="bp-empty">Hozircha habarnoma yo'q</div> : null}
+              </div>
+            </section>
+          ) : null}
+
+          {view === "dashboard" ? (
+            <section className="bp-wrap">
+              <div className="bp-dashboard-grid">
+                <div className="bp-main-col">
+                  <div className="bp-stats">
+                    <article className="bp-stat bp-stat-dark">
+                      <strong>{dashboard?.today_total ?? 0}</strong>
+                      <span>Bugun</span>
+                    </article>
+                    <article className="bp-stat bp-stat-soft">
+                      <strong>{dashboard?.today_done ?? 0}</strong>
+                      <span>Tasdiqlangan</span>
+                    </article>
+                    <article className="bp-stat">
+                      <strong>{dashboard?.today_pending ?? 0}</strong>
+                      <span>Kutilmoqda</span>
+                    </article>
+                  </div>
+
+                  <div className="bp-progress-card">
+                    <div className="bp-progress-top">
+                      <span>Bugungi holat</span>
+                      <span>{dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} yakunlangan</span>
+                    </div>
+                    <div className="bp-progress-track">
+                      <div className="bp-progress-fill" style={{ width: `${Math.round((dashboard?.progress_ratio ?? 0) * 100)}%` }} />
+                    </div>
+                  </div>
+
+                  <button className="bp-link-card" onClick={() => setView("schedule")}>
+                    <div>
+                      <strong>Kunlik jadval</strong>
+                      <span>Barcha bronlarni ko'rish</span>
+                    </div>
+                    <span>›</span>
+                  </button>
+                </div>
+
+                <div className="bp-side-col">
+                  <div className="bp-next-card">
+                    <div className="bp-next-top">
+                      <span>KEYINGI MIJOZ</span>
+                      <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
+                    </div>
+                    <h3>{dashboard?.next_appointment?.client_name ?? "Hamma bronlar yakunlangan"}</h3>
+                    <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
+                    <button
+                      className="bp-complete-btn"
+                      disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}
+                      onClick={() => {
+                        if (dashboard?.next_appointment) {
+                          void approveAppointment(dashboard.next_appointment.id);
+                        }
+                      }}
+                    >
+                      {dashboard?.next_appointment ? "Tasdiqlash" : "Yakunlangan"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <button className="bp-link-card" onClick={() => setView("schedule")}>
-                <div>
-                  <strong>Kunlik jadval</strong>
-                  <span>Barcha bronlarni ko'rish</span>
+              <section className="bp-today-card">
+                <div className="bp-list-head">
+                  <h4>Bugungi bronlar</h4>
+                  <small>{dashboard?.today_total ?? 0} ta</small>
                 </div>
-                <span>›</span>
-              </button>
-            </div>
 
-            <div className="bp-side-col">
-              <div className="bp-next-card">
-                <div className="bp-next-top">
-                  <span>KEYINGI MIJOZ</span>
-                  <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
+                <div className="bp-list">
+                  {(dashboard?.today_appointments ?? []).map((item) => (
+                    <article key={item.id} className="bp-item">
+                      <div>
+                        <strong>{item.client_name}</strong>
+                        <span>{item.appointment_time} · {item.client_phone}</span>
+                        <small>
+                          Bron vaqti: {item.created_at
+                            ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                day: "2-digit",
+                                month: "2-digit",
+                              })
+                            : "-"} (Toshkent)
+                        </small>
+                      </div>
+                      {item.status === "completed" ? (
+                        <em className="bp-chip done">Tasdiqlangan</em>
+                      ) : item.status === "cancelled" ? (
+                        <em className="bp-chip pending">Rad etilgan</em>
+                      ) : (
+                        <div className="bp-inline-actions">
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS</button>
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                          <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
+                        </div>
+                      )}
+                    </article>
+                  ))}
                 </div>
-                <h3>{dashboard?.next_appointment?.client_name ?? "Hamma bronlar yakunlangan"}</h3>
-                <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
-                <button
-                  className="bp-complete-btn"
-                  disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}
-                  onClick={() => {
-                    if (dashboard?.next_appointment) {
-                      void approveAppointment(dashboard.next_appointment.id);
-                    }
-                  }}
-                >
-                  {dashboard?.next_appointment ? "Tasdiqlash" : "Yakunlangan"}
-                </button>
+              </section>
+            </section>
+          ) : null}
+
+          {view === "schedule" ? (
+            <section className="bp-wrap">
+              <div className="bp-day-block">
+                <strong>Bugun</strong>
+                <span>{humanDate}</span>
+                <div className="bp-day-meta">
+                  <small>{dashboard?.today_pending ?? 0} kutilmoqda</small>
+                  <small>{dashboard?.today_done ?? 0} tasdiqlangan</small>
+                  <small>{dashboard?.today_total ?? 0} jami</small>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <section className="bp-today-card">
-            <div className="bp-list-head">
-              <h4>Bugungi bronlar</h4>
-              <small>{dashboard?.today_total ?? 0} ta</small>
-            </div>
+              <div className="bp-filter-row">
+                <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
+                <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
+                <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
+              </div>
 
-            <div className="bp-list">
-              {(dashboard?.today_appointments ?? []).map((item) => (
-                <article key={item.id} className="bp-item">
-                  <div>
-                    <strong>{item.client_name}</strong>
-                    <span>{item.appointment_time} · {item.client_phone}</span>
-                    <small>
+              <div className="bp-schedule-list">
+                {appointments.map((item) => (
+                  <article key={item.id} className="bp-schedule-item">
+                    <div className="bp-schedule-top">
+                      <strong>{item.client_name}</strong>
+                      <span className={`bp-chip ${item.status === "completed" ? "done" : "pending"}`}>
+                        {item.status === "completed" ? "Tasdiqlangan" : item.status === "cancelled" ? "Rad etilgan" : "Kutilmoqda"}
+                      </span>
+                    </div>
+                    <div className="bp-schedule-sub">#{item.id.toString().padStart(4, "0")}</div>
+                    <div className="bp-schedule-line">Vaqt: {item.appointment_time}</div>
+                    <div className="bp-schedule-line">Telefon: {item.client_phone}</div>
+                    <div className="bp-schedule-line">
                       Bron vaqti: {item.created_at
                         ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
                             hour: "2-digit",
                             minute: "2-digit",
                             day: "2-digit",
                             month: "2-digit",
+                            year: "numeric",
                           })
                         : "-"} (Toshkent)
-                    </small>
-                  </div>
-                  {item.status === "completed" ? (
-                    <em className="bp-chip done">Tasdiqlangan</em>
-                  ) : item.status === "cancelled" ? (
-                    <em className="bp-chip pending">Rad etilgan</em>
-                  ) : (
-                    <div className="bp-inline-actions">
-                      <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS</button>
-                      <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
-                      <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
                     </div>
-                  )}
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <div className="bp-mobile-actions">
-            <button className="bp-link-card" onClick={() => setView("schedule")}>
-              <div>
-                  <strong>Kunlik jadval</strong>
-                  <span>Barcha bronlarni ko'rish</span>
+                    {item.status === "pending" ? (
+                      <div className="bp-inline-actions">
+                        <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS yuborish</button>
+                        <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                        <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
+                      </div>
+                    ) : (
+                      <div className="bp-done-note">{item.status === "completed" ? "Bron tasdiqlangan" : "Bron rad etilgan"}</div>
+                    )}
+                  </article>
+                ))}
+                {appointments.length === 0 ? <div className="bp-empty">Bugunga bron yo'q</div> : null}
               </div>
-              <span>›</span>
-            </button>
-          </div>
-        </section>
-      ) : (
-        <section className="bp-wrap">
-          <header className="bp-head schedule">
-            <button className="bp-back" onClick={() => setView("dashboard")}>←</button>
-            <div>
-              <h2>Kunlik jadval</h2>
-              <div className="bp-date">{dashboard?.barber_name || barberName}</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button type="button" className="bp-av-btn" onClick={() => setIsProfileOpen(true)} aria-label="Profil">
-                {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-av-img" /> : <span className="bp-av-placeholder">{initials}</span>}
-              </button>
-              <button className="bp-logout" onClick={onLogout}>Chiqish</button>
-            </div>
-          </header>
-
-          <div className="bp-day-block">
-            <strong>Bugun</strong>
-            <span>{humanDate}</span>
-            <div className="bp-day-meta">
-              <small>{dashboard?.today_pending ?? 0} kutilmoqda</small>
-              <small>{dashboard?.today_done ?? 0} tasdiqlangan</small>
-              <small>{dashboard?.today_total ?? 0} jami</small>
-            </div>
-          </div>
-
-          <div className="bp-filter-row">
-            <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
-            <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
-            <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
-          </div>
-
-          <div className="bp-schedule-list">
-            {appointments.map((item) => (
-              <article key={item.id} className="bp-schedule-item">
-                <div className="bp-schedule-top">
-                  <strong>{item.client_name}</strong>
-                  <span className={`bp-chip ${item.status === "completed" ? "done" : "pending"}`}>
-                    {item.status === "completed" ? "Tasdiqlangan" : item.status === "cancelled" ? "Rad etilgan" : "Kutilmoqda"}
-                  </span>
-                </div>
-                <div className="bp-schedule-sub">#{item.id.toString().padStart(4, "0")}</div>
-                <div className="bp-schedule-line">🕒 {item.appointment_time}</div>
-                <div className="bp-schedule-line">📞 {item.client_phone}</div>
-                <div className="bp-schedule-line">
-                  ⏱ Bron vaqti: {item.created_at
-                    ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })
-                    : "-"} (Toshkent)
-                </div>
-                {item.status === "pending" ? (
-                  <div className="bp-inline-actions">
-                    <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>
-                      SMS yuborish
-                    </button>
-                    <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>
-                      Tasdiqlash
-                    </button>
-                    <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>
-                      Rad etish
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bp-done-note">{item.status === "completed" ? "Bron tasdiqlangan" : "Bron rad etilgan"}</div>
-                )}
-              </article>
-            ))}
-            {appointments.length === 0 ? <div className="bp-empty">Bugunga bron yo'q</div> : null}
-          </div>
-        </section>
-      )}
+            </section>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
+

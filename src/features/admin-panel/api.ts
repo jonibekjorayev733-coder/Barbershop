@@ -40,6 +40,10 @@ export interface BarberProfileUpdatePayload {
   email: string;
   password?: string;
   photo_url?: string | null;
+  specialty?: string;
+  work_directions?: string;
+  service_price?: number;
+  discount_percent?: number;
 }
 
 export interface BarberProfileApi {
@@ -47,6 +51,32 @@ export interface BarberProfileApi {
   name: string;
   email: string;
   photo_url?: string | null;
+  specialty?: string;
+  work_directions?: string;
+  service_price?: number;
+  discount_percent?: number;
+}
+
+export interface BarberNotificationApi {
+  id: number;
+  barber_id: number;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at?: string;
+}
+
+export interface BarberRatingPayload {
+  score: number;
+  user_name?: string;
+  comment?: string;
+}
+
+export interface BarberRatingResponseApi {
+  barber_id: number;
+  rating: number;
+  rating_votes: number;
 }
 
 export interface UserProfileUpdatePayload {
@@ -91,6 +121,7 @@ export interface UserBookingBarberApi {
   id: number;
   name: string;
   specialty: string;
+  work_directions?: string | null;
   rating: number;
   years_experience: number;
   photo_url?: string | null;
@@ -100,6 +131,7 @@ export interface UserBookingBarberApi {
   status?: string;
   color?: string | null;
   service_price?: number;
+  discount_percent?: number;
 }
 
 export interface BarberAvailabilitySlotApi {
@@ -137,6 +169,7 @@ export interface UserBookingConfirmationApi {
   client_phone: string;
   service_name?: string | null;
   service_price?: number | null;
+  discount_percent?: number;
   created_at?: string;
   status: "pending" | "completed" | "cancelled";
 }
@@ -303,6 +336,23 @@ export async function updateBarberProfile(barberId: number, payload: BarberProfi
 
 export async function getBarberProfile(barberId: number): Promise<BarberProfileApi> {
   return requestJson<BarberProfileApi>(`/barbers/${barberId}/profile`);
+}
+
+export async function getBarberNotifications(barberId: number): Promise<BarberNotificationApi[]> {
+  return requestJson<BarberNotificationApi[]>(`/barbers/${barberId}/notifications`);
+}
+
+export async function markBarberNotificationRead(barberId: number, notificationId: number): Promise<BarberNotificationApi> {
+  return requestJson<BarberNotificationApi>(`/barbers/${barberId}/notifications/${notificationId}/read`, {
+    method: "PUT",
+  });
+}
+
+export async function submitBarberRating(barberId: number, payload: BarberRatingPayload): Promise<BarberRatingResponseApi> {
+  return requestJson<BarberRatingResponseApi>(`/barbers/${barberId}/ratings`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateStudentProfile(userId: number, payload: UserProfileUpdatePayload): Promise<UserProfileApi> {

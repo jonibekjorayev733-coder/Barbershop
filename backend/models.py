@@ -46,6 +46,7 @@ class Barber(Base):
     specialty = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     rating = Column(Float, default=4.8)
+    rating_votes = Column(Integer, default=0)
     total_cuts = Column(Integer, default=0)
     today_cuts = Column(Integer, default=0)
     status = Column(String, default="available")
@@ -57,6 +58,9 @@ class Barber(Base):
     password = Column(String, nullable=True)
     role = Column(String, default="barber")
     bio = Column(String, nullable=True)
+    work_directions = Column(String, nullable=True)
+    service_price = Column(Float, default=40000)
+    discount_percent = Column(Float, default=0)
     created_at = Column(DateTime, default=tashkent_now)
     updated_at = Column(DateTime, default=tashkent_now, onupdate=tashkent_now)
 

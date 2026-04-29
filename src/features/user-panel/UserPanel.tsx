@@ -14,6 +14,7 @@ import {
   createUserBooking,
   getBarberAvailability,
   getUserBookingBarbers,
+  submitBarberRating,
   updateStudentProfile,
   type BarberAvailabilityApi,
   type UserBookingBarberApi,
@@ -71,6 +72,11 @@ function formatPrice(value?: number | null): string {
   return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
 }
 
+function formatDiscount(discount?: number | null): string {
+  const value = typeof discount === "number" ? Math.max(0, Math.min(100, discount)) : 0;
+  return value > 0 ? `${Math.round(value)}% skidka` : "Skidka yo'q";
+}
+
 export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProfileUpdated, onLogout }: UserPanelProps) {
   const [step, setStep] = useState<UserBookingStep>("barbers");
   const [barbers, setBarbers] = useState<UserBookingBarberApi[]>([]);
@@ -85,6 +91,9 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [ratingScore, setRatingScore] = useState(0);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState<string | null>(null);
 
   // --- Profile drawer state ---
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -230,6 +239,17 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
+      if (payload.event === "barber.profile.updated" || payload.event === "barber.rating.updated") {
+        void (async () => {
+          try {
+            const rows = await getUserBookingBarbers();
+            setBarbers(rows);
+          } catch {
+            return;
+          }
+        })();
+      }
+
       if (!selectedBarber) {
         return;
       }
@@ -339,6 +359,8 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
         user_id: userId,
       });
       setConfirmation(result);
+      setRatingScore(0);
+      setRatingMessage(null);
       setStep("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Bron yaratilmadi.");
@@ -375,6 +397,33 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
   const goHome = () => {
     window.location.href = "/";
+  };
+
+  const submitRating = async () => {
+    if (!confirmation?.barber_id) {
+      return;
+    }
+    if (ratingScore < 1 || ratingScore > 5) {
+      setRatingMessage("Iltimos, 1 dan 5 gacha baho tanlang.");
+      return;
+    }
+
+    try {
+      setRatingLoading(true);
+      setRatingMessage(null);
+      await submitBarberRating(confirmation.barber_id, {
+        score: ratingScore,
+        user_name: clientName || userName,
+      });
+      setRatingMessage("Rahmat! Bahoyingiz yuborildi.");
+
+      const rows = await getUserBookingBarbers();
+      setBarbers(rows);
+    } catch (error) {
+      setRatingMessage(error instanceof Error ? error.message : "Baho yuborilmadi.");
+    } finally {
+      setRatingLoading(false);
+    }
   };
 
   return (
@@ -532,11 +581,13 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
                         <div className="ub-barber-info">
                           <strong>{barber.name}</strong>
-                          <span>{barber.specialty}</span>
+                          <span>{barber.work_directions || barber.specialty}</span>
                           <small>
                             <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
                             <span className="ub-meta-sep">·</span>
                             <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil tajriba</span>
+                            <span className="ub-meta-sep">·</span>
+                            <span className="ub-meta-item"><FiScissors /> {formatPrice(barber.service_price)} ({formatDiscount(barber.discount_percent)})</span>
                           </small>
                         </div>
 
@@ -567,11 +618,12 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
               )}
               <div className="ub-bd-hero-info">
                 <h2>{selectedBarber.name}</h2>
-                <span className="ub-bd-specialty">{selectedBarber.specialty}</span>
+                <span className="ub-bd-specialty">{selectedBarber.work_directions || selectedBarber.specialty}</span>
                 <div className="ub-bd-badges">
                   <span className={`ub-bd-status ${selectedBarber.status === "available" ? "available" : "busy"}`}>
                     {selectedBarber.status === "available" ? "🟢 Bo'sh" : "🔴 Band"}
                   </span>
+                  <span className="ub-bd-status available">💸 {formatDiscount(selectedBarber.discount_percent)}</span>
                 </div>
               </div>
             </div>
@@ -589,8 +641,8 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
               </div>
               <div className="ub-bd-stat">
                 <FiScissors />
-                <strong>{selectedBarber.total_cuts ?? 0}</strong>
-                <span>Jami kesim</span>
+                <strong>{formatPrice(selectedBarber.service_price)}</strong>
+                <span>Xizmat narxi</span>
               </div>
             </div>
 
@@ -716,12 +768,13 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
               )}
               <div>
                 <strong>{selectedBarber.name}</strong>
-                <span>{selectedBarber.specialty}</span>
+                <span>{selectedBarber.work_directions || selectedBarber.specialty}</span>
               </div>
             </div>
             <div className="ub-inline-info"><FiCalendar /> {humanDate}</div>
             <div className="ub-inline-info"><FiClock /> {selectedTime}</div>
             <div className="ub-inline-info"><FiScissors /> {formatPrice(selectedBarber.service_price)}</div>
+            <div className="ub-inline-info"><FiZap /> {formatDiscount(selectedBarber.discount_percent)}</div>
           </div>
 
           <label className="ub-field">
@@ -773,6 +826,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
             <div>{formatHumanDate(confirmation.appointment_date)}</div>
             <div>{confirmation.appointment_time}</div>
             <div>Narxi: {formatPrice(confirmation.service_price)}</div>
+            <div>Skidka: {formatDiscount(confirmation.discount_percent)}</div>
             <div>
               Bron vaqti: {confirmation.created_at
                 ? formatDateTimeInTashkent(confirmation.created_at, "uz-UZ", {
@@ -788,6 +842,26 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
           </div>
 
           <div className="ub-share-note">✅ Siz bilan telefon orqali bog'lanamiz.</div>
+
+          <div className="ub-rating-box">
+            <div className="ub-rating-title">Sartaroshga baho bering</div>
+            <div className="ub-rating-stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  className={`ub-rating-star ${ratingScore >= star ? "active" : ""}`}
+                  onClick={() => setRatingScore(star)}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <button className="ub-secondary" onClick={() => void submitRating()} disabled={ratingLoading}>
+              {ratingLoading ? "Yuborilmoqda..." : "Bahoni yuborish"}
+            </button>
+            {ratingMessage ? <div className="ub-rating-msg">{ratingMessage}</div> : null}
+          </div>
 
           {shareMessage ? <div className="ub-share-note">{shareMessage}</div> : null}
 

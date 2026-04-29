@@ -30,6 +30,10 @@ class BarberProfileUpdate(BaseModel):
     email: str
     password: Optional[str] = None
     photo_url: Optional[str] = None
+    specialty: Optional[str] = None
+    work_directions: Optional[str] = None
+    service_price: Optional[float] = None
+    discount_percent: Optional[float] = None
 
 
 class BarberProfile(BaseModel):
@@ -37,6 +41,10 @@ class BarberProfile(BaseModel):
     name: str
     email: str
     photo_url: Optional[str] = None
+    specialty: Optional[str] = None
+    work_directions: Optional[str] = None
+    service_price: Optional[float] = None
+    discount_percent: Optional[float] = None
     class Config: from_attributes = True
 
 class TeacherBase(BaseModel):
@@ -131,6 +139,7 @@ class UserBookingBarber(BaseModel):
     id: int
     name: str
     specialty: str
+    work_directions: Optional[str] = None
     rating: float
     years_experience: int
     photo_url: Optional[str] = None
@@ -140,6 +149,7 @@ class UserBookingBarber(BaseModel):
     status: Optional[str] = "available"
     color: Optional[str] = None
     service_price: Optional[float] = 0
+    discount_percent: Optional[float] = 0
 
 
 class TimeSlotAvailability(BaseModel):
@@ -177,8 +187,31 @@ class UserBookingConfirmation(BaseModel):
     client_phone: str
     service_name: Optional[str] = None
     service_price: Optional[float] = None
+    discount_percent: Optional[float] = 0
     created_at: Optional[datetime] = None
     status: str
+
+
+class BarberRatingCreate(BaseModel):
+    score: int
+    user_name: Optional[str] = None
+    comment: Optional[str] = None
+
+
+class BarberRatingResponse(BaseModel):
+    barber_id: int
+    rating: float
+    rating_votes: int
+
+
+class BarberNotificationRow(BaseModel):
+    id: int
+    barber_id: int
+    title: str
+    message: str
+    type: str
+    read: bool = False
+    created_at: Optional[datetime] = None
 
 
 class AdminBookingRow(BaseModel):

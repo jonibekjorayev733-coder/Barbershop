@@ -1340,6 +1340,7 @@ def ensure_legacy_schema_compatibility():
             specialty VARCHAR NOT NULL,
             phone VARCHAR NOT NULL,
             rating FLOAT DEFAULT 4.8,
+            rating_votes INTEGER DEFAULT 0,
             total_cuts INTEGER DEFAULT 0,
             today_cuts INTEGER DEFAULT 0,
             status VARCHAR DEFAULT 'available',
@@ -1351,6 +1352,9 @@ def ensure_legacy_schema_compatibility():
             password VARCHAR NULL,
             role VARCHAR DEFAULT 'barber',
             bio VARCHAR NULL,
+            work_directions VARCHAR NULL,
+            service_price FLOAT DEFAULT 40000,
+            discount_percent FLOAT DEFAULT 0,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
         )
@@ -1389,6 +1393,10 @@ def ensure_legacy_schema_compatibility():
         "ALTER TABLE IF EXISTS teacher ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'teacher'",
         "ALTER TABLE IF EXISTS student ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student'",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'barber'",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS work_directions VARCHAR",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS service_price FLOAT DEFAULT 40000",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS discount_percent FLOAT DEFAULT 0",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS rating_votes INTEGER DEFAULT 0",
         "UPDATE admin SET role = 'admin' WHERE role IS NULL OR role = ''",
         "UPDATE teacher SET role = 'teacher' WHERE role IS NULL OR role = ''",
         "UPDATE student SET role = 'student' WHERE role IS NULL OR role = ''",
@@ -1615,6 +1623,26 @@ def estimate_service_price(service_name: Optional[str]) -> float:
     if "classic" in service_text:
         return 30000
     return 40000
+
+
+def clamp_discount_percent(discount_value: Optional[float]) -> float:
+    try:
+        parsed = float(discount_value or 0)
+    except Exception:
+        parsed = 0
+    return max(0.0, min(100.0, parsed))
+
+
+def get_barber_service_price(barber: Optional[models.Barber], service_name: Optional[str] = None) -> float:
+    if barber is not None and barber.service_price and barber.service_price > 0:
+        return float(barber.service_price)
+    return estimate_service_price(service_name or (barber.specialty if barber else None))
+
+
+def get_discounted_price(base_price: float, discount_percent: Optional[float]) -> float:
+    normalized_discount = clamp_discount_percent(discount_percent)
+    discounted = base_price * (1 - normalized_discount / 100)
+    return round(max(0, discounted), 2)
 
 
 ALLOWED_ASSIGNMENT_STATUSES = {"accepted", "in_progress", "completed"}
@@ -2371,6 +2399,10 @@ def get_barber_profile(barber_id: int, db: Session = Depends(get_db)):
         "name": db_barber.name,
         "email": db_barber.username or "",
         "photo_url": db_barber.photo_url,
+        "specialty": db_barber.specialty,
+        "work_directions": db_barber.work_directions,
+        "service_price": db_barber.service_price,
+        "discount_percent": clamp_discount_percent(db_barber.discount_percent),
     }
 
 
@@ -2394,9 +2426,25 @@ def update_barber_profile(barber_id: int, payload: schemas.BarberProfileUpdate, 
     if existing_barber:
         raise HTTPException(status_code=400, detail="Bu email boshqa sartaroshga biriktirilgan")
 
+    previous_discount = clamp_discount_percent(db_barber.discount_percent)
+
     db_barber.name = normalized_name
     db_barber.username = normalized_email
     db_barber.photo_url = (payload.photo_url or "").strip() or None
+
+    if payload.specialty is not None and payload.specialty.strip():
+        db_barber.specialty = payload.specialty.strip()
+
+    if payload.work_directions is not None:
+        db_barber.work_directions = payload.work_directions.strip() or None
+
+    if payload.service_price is not None:
+        if payload.service_price < 0:
+            raise HTTPException(status_code=400, detail="Narx manfiy bo'lishi mumkin emas")
+        db_barber.service_price = float(payload.service_price)
+
+    if payload.discount_percent is not None:
+        db_barber.discount_percent = clamp_discount_percent(payload.discount_percent)
 
     next_password = (payload.password or "").strip()
     if next_password:
@@ -2407,11 +2455,63 @@ def update_barber_profile(barber_id: int, payload: schemas.BarberProfileUpdate, 
 
     db.commit()
     db.refresh(db_barber)
+
+    schedule_realtime(
+        "bookings",
+        "barber.profile.updated",
+        {
+            "barber_id": db_barber.id,
+            "name": db_barber.name,
+            "specialty": db_barber.specialty,
+            "work_directions": db_barber.work_directions,
+            "service_price": get_barber_service_price(db_barber, db_barber.specialty),
+            "discount_percent": clamp_discount_percent(db_barber.discount_percent),
+        },
+    )
+    schedule_realtime(
+        f"barber:{db_barber.id}",
+        "barber.profile.updated",
+        {
+            "barber_id": db_barber.id,
+            "service_price": get_barber_service_price(db_barber, db_barber.specialty),
+            "discount_percent": clamp_discount_percent(db_barber.discount_percent),
+        },
+    )
+
+    updated_discount = clamp_discount_percent(db_barber.discount_percent)
+    if updated_discount > 0 and updated_discount != previous_discount:
+        sync_notification_id_sequence(db)
+        discount_notification = models.Notification(
+            user_id=db_barber.id,
+            title="Yangi skidka sozlandi",
+            message=f"Bugungi skidka: {int(updated_discount)}%",
+            type="barber_discount",
+        )
+        db.add(discount_notification)
+        db.commit()
+        db.refresh(discount_notification)
+        schedule_realtime(
+            f"barber:{db_barber.id}",
+            "barber.notification",
+            {
+                "id": discount_notification.id,
+                "title": discount_notification.title,
+                "message": discount_notification.message,
+                "type": discount_notification.type,
+                "read": discount_notification.read,
+                "created_at": discount_notification.created_at.isoformat() if discount_notification.created_at else None,
+            },
+        )
+
     return {
         "id": db_barber.id,
         "name": db_barber.name,
         "email": db_barber.username or "",
         "photo_url": db_barber.photo_url,
+        "specialty": db_barber.specialty,
+        "work_directions": db_barber.work_directions,
+        "service_price": get_barber_service_price(db_barber, db_barber.specialty),
+        "discount_percent": clamp_discount_percent(db_barber.discount_percent),
     }
 
 
@@ -2501,6 +2601,7 @@ def get_user_booking_barbers(db: Session = Depends(get_db)):
             "id": item.id,
             "name": item.name,
             "specialty": item.specialty,
+            "work_directions": item.work_directions,
             "rating": item.rating,
             "years_experience": item.years_experience,
             "photo_url": item.photo_url,
@@ -2509,7 +2610,11 @@ def get_user_booking_barbers(db: Session = Depends(get_db)):
             "total_cuts": item.total_cuts,
             "status": item.status,
             "color": item.color,
-            "service_price": estimate_service_price(item.specialty),
+            "service_price": get_discounted_price(
+                get_barber_service_price(item, item.specialty),
+                item.discount_percent,
+            ),
+            "discount_percent": clamp_discount_percent(item.discount_percent),
         }
         for item in rows
     ]
@@ -2612,7 +2717,11 @@ def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session =
         "client_name": appointment.client_name,
         "client_phone": appointment.client_phone,
         "service_name": appointment.service_name,
-        "service_price": estimate_service_price(appointment.service_name),
+        "service_price": get_discounted_price(
+            get_barber_service_price(db_barber, appointment.service_name),
+            db_barber.discount_percent,
+        ),
+        "discount_percent": clamp_discount_percent(db_barber.discount_percent),
         "created_at": appointment.created_at,
         "status": appointment.status,
     }
@@ -2645,7 +2754,10 @@ def read_bookings(
             "phone": appointment.client_phone,
             "barber": barber.name,
             "service": appointment.service_name or barber.specialty or "Haircut",
-            "price": estimate_service_price(appointment.service_name),
+            "price": get_discounted_price(
+                get_barber_service_price(barber, appointment.service_name),
+                barber.discount_percent,
+            ),
             "time": appointment.appointment_time,
             "date": appointment.appointment_date,
             "status": normalize_status_for_admin(appointment.status),
@@ -2731,6 +2843,128 @@ def send_barber_appointment_sms(
         "success": sent,
         "appointment_id": appointment.id,
         "message": "SMS yuborildi" if sent else "SMS yuborilmadi",
+    }
+
+
+@app.post("/barbers/{barber_id}/ratings", response_model=schemas.BarberRatingResponse)
+def submit_barber_rating(
+    barber_id: int,
+    payload: schemas.BarberRatingCreate,
+    db: Session = Depends(get_db),
+):
+    db_barber = db.query(models.Barber).filter(models.Barber.id == barber_id).first()
+    if db_barber is None:
+        raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
+
+    if payload.score < 1 or payload.score > 5:
+        raise HTTPException(status_code=400, detail="Baho 1 dan 5 gacha bo'lishi kerak")
+
+    previous_votes = int(db_barber.rating_votes or 0)
+    previous_rating = float(db_barber.rating or 0)
+    next_votes = previous_votes + 1
+    next_rating = ((previous_rating * previous_votes) + payload.score) / max(1, next_votes)
+
+    db_barber.rating_votes = next_votes
+    db_barber.rating = round(next_rating, 2)
+    db_barber.updated_at = now_tashkent()
+
+    author_name = (payload.user_name or "Mijoz").strip() or "Mijoz"
+    sync_notification_id_sequence(db)
+    rating_notification = models.Notification(
+        user_id=db_barber.id,
+        title="Yangi baho",
+        message=f"{author_name} sizga {payload.score} bal berdi",
+        type="barber_rating",
+    )
+    db.add(rating_notification)
+
+    db.commit()
+    db.refresh(db_barber)
+    db.refresh(rating_notification)
+
+    schedule_realtime(
+        f"barber:{barber_id}",
+        "barber.rating.updated",
+        {
+            "barber_id": barber_id,
+            "rating": db_barber.rating,
+            "rating_votes": db_barber.rating_votes,
+            "score": payload.score,
+        },
+    )
+
+    schedule_realtime(
+        f"barber:{barber_id}",
+        "barber.notification",
+        {
+            "id": rating_notification.id,
+            "title": rating_notification.title,
+            "message": rating_notification.message,
+            "type": rating_notification.type,
+            "read": rating_notification.read,
+            "created_at": rating_notification.created_at.isoformat() if rating_notification.created_at else None,
+        },
+    )
+
+    schedule_realtime(
+        "bookings",
+        "barber.rating.updated",
+        {
+            "barber_id": barber_id,
+            "rating": db_barber.rating,
+            "rating_votes": db_barber.rating_votes,
+        },
+    )
+
+    return {
+        "barber_id": barber_id,
+        "rating": db_barber.rating,
+        "rating_votes": db_barber.rating_votes,
+    }
+
+
+@app.get("/barbers/{barber_id}/notifications", response_model=List[schemas.BarberNotificationRow])
+def get_barber_notifications(barber_id: int, db: Session = Depends(get_db)):
+    rows = db.query(models.Notification).filter(
+        models.Notification.user_id == barber_id,
+        models.Notification.type.in_(["barber_rating", "barber_discount", "barber_system"]),
+    ).order_by(models.Notification.created_at.desc()).all()
+
+    return [
+        {
+            "id": item.id,
+            "barber_id": barber_id,
+            "title": item.title,
+            "message": item.message,
+            "type": item.type,
+            "read": item.read,
+            "created_at": item.created_at,
+        }
+        for item in rows
+    ]
+
+
+@app.put("/barbers/{barber_id}/notifications/{notification_id}/read", response_model=schemas.BarberNotificationRow)
+def mark_barber_notification_read(barber_id: int, notification_id: int, db: Session = Depends(get_db)):
+    row = db.query(models.Notification).filter(
+        models.Notification.id == notification_id,
+        models.Notification.user_id == barber_id,
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Habarnoma topilmadi")
+
+    row.read = True
+    db.commit()
+    db.refresh(row)
+
+    return {
+        "id": row.id,
+        "barber_id": barber_id,
+        "title": row.title,
+        "message": row.message,
+        "type": row.type,
+        "read": row.read,
+        "created_at": row.created_at,
     }
 
 # Students
