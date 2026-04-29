@@ -4435,3 +4435,68 @@ body::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/*  UserPanel left-nav layout (mirrors bp-* classes)  */
+.ub-panel-grid {
+  width: min(1380px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 14px;
+}
+
+.ub-left-menu {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(14, 18, 30, 0.88), rgba(8, 10, 16, 0.8));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 12px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 120px;
+}
+
+.ub-left-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #dbeafe;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.ub-left-btn:hover {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.ub-left-btn.active {
+  border-color: rgba(96, 165, 250, 0.7);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(59, 130, 246, 0.22));
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.ub-main-panel {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.ub-profile-page {
+  max-width: 980px;
+}
+
+@media (max-width: 980px) {
+  .ub-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-left-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
