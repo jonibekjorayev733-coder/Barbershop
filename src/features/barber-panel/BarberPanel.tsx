@@ -288,31 +288,43 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
             </div>
           </div>
 
-          <div className="bp-list-head">
-            <h4>Today's Appointments</h4>
-            <small>{dashboard?.today_total ?? 0} total</small>
-          </div>
+          <section className="bp-today-card">
+            <div className="bp-list-head">
+              <h4>Today's Appointments</h4>
+              <small>{dashboard?.today_total ?? 0} total</small>
+            </div>
 
-          <div className="bp-list">
-            {(dashboard?.today_appointments ?? []).map((item) => (
-              <article key={item.id} className="bp-item">
-                <div>
-                  <strong>{item.client_name}</strong>
-                  <span>{item.appointment_time}</span>
-                </div>
-                {item.status === "completed" ? (
-                  <em className="bp-chip done">Done</em>
-                ) : (
-                  <button
-                    className="bp-chip action"
-                    disabled={isUpdating === item.id}
-                    onClick={() => void markAsCompleted(item.id)}
-                  >
-                    Done
-                  </button>
-                )}
-              </article>
-            ))}
+            <div className="bp-list">
+              {(dashboard?.today_appointments ?? []).map((item) => (
+                <article key={item.id} className="bp-item">
+                  <div>
+                    <strong>{item.client_name}</strong>
+                    <span>{item.appointment_time}</span>
+                  </div>
+                  {item.status === "completed" ? (
+                    <em className="bp-chip done">Done</em>
+                  ) : (
+                    <button
+                      className="bp-chip action"
+                      disabled={isUpdating === item.id}
+                      onClick={() => void markAsCompleted(item.id)}
+                    >
+                      Done
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <div className="bp-mobile-actions">
+            <button className="bp-link-card" onClick={() => setView("schedule")}>
+              <div>
+                <strong>Daily Schedule</strong>
+                <span>View all appointments</span>
+              </div>
+              <span>›</span>
+            </button>
           </div>
         </section>
       ) : (

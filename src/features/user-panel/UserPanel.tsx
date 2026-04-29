@@ -488,17 +488,33 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
         {step === "barbers" ? (
           <section className="ub-card ub-card-barbers">
-            <div className="ub-layout-v2">
-              <div className="ub-main-column">
-                <div className="ub-list-head-v2">
-                  <div className="ub-logo-row">
-                    <div className="ub-logo-icon"><FiScissors /></div>
-                    <div className="ub-brand">SHARP CUTS</div>
-                  </div>
-                  <h2 className="ub-title ub-title-compact">Sartaroshni tanlang va bronni boshlang</h2>
-                  <p className="ub-list-sub">Avval ustani tanlang, keyin vaqtni tanlab bir necha bosqichda yakunlang.</p>
+            <div className="ub-layout-v3">
+              <div className="ub-hero-card">
+                <div className="ub-logo-row">
+                  <div className="ub-logo-icon"><FiScissors /></div>
+                  <div className="ub-brand">SHARP CUTS</div>
                 </div>
+                <h2 className="ub-title ub-title-compact">Sartaroshni tanlang</h2>
+                <p className="ub-list-sub">Ro'yxatdan usta tanlang, vaqt belgilang va bronni tez yakunlang.</p>
+                <div className="ub-hero-pills">
+                  <span><FiZap /> Tezkor bron</span>
+                  <span><FiShield /> Ishonchli ustalar</span>
+                  <span><FiClock /> Jonli vaqtlar</span>
+                </div>
+              </div>
 
+              <aside className="ub-side-column">
+                <div className="ub-side-card">
+                  <div className="ub-side-title">Qanday ishlaydi?</div>
+                  <div className="ub-side-steps">
+                    <div><span>1</span>Sartaroshni tanlang</div>
+                    <div><span>2</span>Bo'sh vaqtni belgilang</div>
+                    <div><span>3</span>Ma'lumotni tasdiqlang</div>
+                  </div>
+                </div>
+              </aside>
+
+              <div className="ub-list-block">
                 <div className="ub-barbers-list-wrap">
                   <div className="ub-section-title">SARTAROSHLAR RO'YXATI</div>
 
@@ -537,32 +553,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
                   </div>
                 </div>
               </div>
-
-              <aside className="ub-side-column">
-                <div className="ub-side-card">
-                  <div className="ub-side-title">Qanday ishlaydi?</div>
-                  <div className="ub-side-steps">
-                    <div><span>1</span>Sartaroshni tanlang</div>
-                    <div><span>2</span>Bo'sh vaqtni belgilang</div>
-                    <div><span>3</span>Ma'lumotni tasdiqlang</div>
-                  </div>
-                </div>
-
-                <div className="ub-benefits ub-benefits-compact">
-                  <div className="ub-benefit-card">
-                    <span><FiZap /> Tezkor bron</span>
-                    <strong>1 daqiqadan kam vaqtda</strong>
-                  </div>
-                  <div className="ub-benefit-card">
-                    <span><FiShield /> Ishonchli ustalar</span>
-                    <strong>yuqori reytingli mutaxassislar</strong>
-                  </div>
-                  <div className="ub-benefit-card">
-                    <span><FiClock /> Jonli bo'sh vaqtlar</span>
-                    <strong>har doim yangilanib turadi</strong>
-                  </div>
-                </div>
-              </aside>
             </div>
           </section>
         ) : null}
