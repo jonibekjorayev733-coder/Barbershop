@@ -193,14 +193,14 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
   const filteredBarbers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    if (!query) {
-      return barbers;
-    }
-    return barbers.filter(
-      (barber) =>
-        barber.name.toLowerCase().includes(query) ||
-        barber.specialty.toLowerCase().includes(query),
-    );
+    const list = !query
+      ? [...barbers]
+      : barbers.filter(
+          (barber) =>
+            barber.name.toLowerCase().includes(query) ||
+            barber.specialty.toLowerCase().includes(query),
+        );
+    return list.sort((a, b) => b.rating - a.rating);
   }, [barbers, searchTerm]);
 
   const averageRating = useMemo(() => {

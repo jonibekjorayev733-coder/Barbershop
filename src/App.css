@@ -2066,9 +2066,9 @@ body::before {
     min-height: 100vh;
     padding: 22px 18px 30px;
     background:
-      radial-gradient(60rem 28rem at 8% -8%, rgba(37, 99, 235, 0.22), transparent 65%),
-      radial-gradient(42rem 26rem at 100% 100%, rgba(99, 102, 241, 0.2), transparent 65%),
-      linear-gradient(180deg, #030914 0%, #040b1a 55%, #020814 100%);
+      radial-gradient(50rem 22rem at 80% 0%, rgba(59, 130, 246, 0.07), transparent 60%),
+      radial-gradient(38rem 20rem at 0% 100%, rgba(99, 102, 241, 0.05), transparent 60%),
+      linear-gradient(180deg, #050507 0%, #070709 55%, #06060a 100%);
     position: relative;
     overflow: hidden;
   }
@@ -2102,12 +2102,12 @@ body::before {
   .ub-page-head {
     width: min(1320px, 100%);
     margin: 0 auto 12px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 18px;
-    background: linear-gradient(160deg, rgba(7, 18, 36, 0.8), rgba(8, 19, 38, 0.55));
+    background: linear-gradient(160deg, rgba(14, 14, 20, 0.9), rgba(8, 8, 14, 0.82));
     padding: 16px 18px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
   }
@@ -2251,16 +2251,16 @@ body::before {
   .ub-card {
     width: min(1320px, 100%);
     margin: 0 auto;
-    border-radius: 30px;
-    border: 1px solid rgba(148, 163, 184, 0.26);
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.93), rgba(4, 12, 27, 0.94));
-    box-shadow: 0 28px 72px rgba(2, 8, 22, 0.6);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(145deg, rgba(14, 14, 20, 0.94), rgba(8, 8, 14, 0.95));
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
     color: #f8fafc;
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
     position: relative;
   }
 
@@ -2308,13 +2308,13 @@ body::before {
   }
 
   .ub-barbers-list-wrap {
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 20px;
-    background: linear-gradient(170deg, rgba(2, 8, 23, 0.43), rgba(9, 17, 33, 0.35));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: linear-gradient(170deg, rgba(14, 14, 20, 0.88), rgba(8, 8, 14, 0.8));
     padding: 14px;
     display: flex;
     flex-direction: column;
-    height: clamp(460px, 72vh, 700px);
+    height: auto;
   }
 
   .ub-search-wrap {
@@ -3459,9 +3459,9 @@ body::before {
 .bp-shell,
 .ub-shell {
   background:
-    radial-gradient(55rem 30rem at -8% -10%, rgba(96, 165, 250, 0.22), transparent 62%),
-    radial-gradient(46rem 28rem at 112% 112%, rgba(167, 139, 250, 0.2), transparent 64%),
-    linear-gradient(135deg, #050914 0%, #070d18 52%, #080e1d 100%);
+    radial-gradient(50rem 24rem at 80% 0%, rgba(59, 130, 246, 0.08), transparent 60%),
+    radial-gradient(40rem 22rem at 0% 100%, rgba(99, 102, 241, 0.06), transparent 60%),
+    linear-gradient(180deg, #050507 0%, #070709 55%, #06060a 100%);
 }
 
 .bp-wrap,
@@ -3477,11 +3477,11 @@ body::before {
 .bp-day-block,
 .bp-filter-row,
 .bp-schedule-item {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 14px 36px rgba(2, 8, 23, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.24);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
+  background: linear-gradient(140deg, rgba(18, 18, 22, 0.85), rgba(10, 10, 14, 0.72));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
 }
 
 .bp-wrap,
@@ -3521,10 +3521,10 @@ body::before {
 .ub-success-summary,
 .bp-chip.action,
 .bp-filter-row button.active {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(140deg, rgba(20, 20, 28, 0.88), rgba(12, 12, 18, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .ub-search-input,
@@ -3663,13 +3663,13 @@ body::before {
 }
 
 .ub-side-card {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(140deg, rgba(18, 18, 26, 0.88), rgba(10, 10, 16, 0.75));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
   padding: 14px;
   margin-bottom: 12px;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .ub-side-title {
@@ -3791,12 +3791,12 @@ body::before {
 
 .ub-hero-card {
   grid-area: hero;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
   padding: 14px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(150deg, rgba(18, 18, 26, 0.88), rgba(10, 10, 16, 0.75));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .ub-title-compact {
@@ -3884,12 +3884,12 @@ body::before {
 }
 
 .bp-today-card {
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 12px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(150deg, rgba(18, 18, 26, 0.88), rgba(10, 10, 16, 0.75));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .bp-today-card .bp-list {
