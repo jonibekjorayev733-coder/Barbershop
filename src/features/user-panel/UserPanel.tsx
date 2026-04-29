@@ -33,7 +33,7 @@ interface UserPanelProps {
   onLogout: () => void;
 }
 
-type UserBookingStep = "barbers" | "times" | "details" | "success";
+type UserBookingStep = "barbers" | "barber-detail" | "times" | "details" | "success";
 
 const BOOKING_STEPS: Array<{ id: UserBookingStep; label: string }> = [
   { id: "barbers", label: "Sartarosh" },
@@ -44,6 +44,7 @@ const BOOKING_STEPS: Array<{ id: UserBookingStep; label: string }> = [
 
 const STEP_ORDER: Record<UserBookingStep, number> = {
   barbers: 1,
+  "barber-detail": 1,
   times: 2,
   details: 3,
   success: 4,
@@ -257,12 +258,18 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
   }, []);
 
   const pickBarber = async (barber: UserBookingBarberApi) => {
+    setErrorMessage(null);
+    setSelectedBarber(barber);
+    setSelectedTime("");
+    setStep("barber-detail");
+  };
+
+  const confirmBarber = async () => {
+    if (!selectedBarber) return;
     try {
       setErrorMessage(null);
       setLoading(true);
-      setSelectedBarber(barber);
-      setSelectedTime("");
-      await refreshAvailability(barber.id, selectedDate);
+      await refreshAvailability(selectedBarber.id, selectedDate);
       setStep("times");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Bo'sh vaqtlar yuklanmadi.");
@@ -556,10 +563,86 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
           </section>
         ) : null}
 
+        {step === "barber-detail" && selectedBarber ? (
+          <section className="ub-card ub-barber-detail-card">
+            <button className="ub-back-btn" onClick={() => setStep("barbers")}>
+              ← Orqaga
+            </button>
+
+            <div className="ub-bd-hero">
+              {selectedBarber.photo_url ? (
+                <img src={selectedBarber.photo_url} alt={selectedBarber.name} className="ub-bd-avatar" />
+              ) : (
+                <div className="ub-bd-avatar ub-bd-avatar-fallback" style={{ background: selectedBarber.color ?? "linear-gradient(135deg,#6366f1,#818cf8)" }}>
+                  {getInitials(selectedBarber.name)}
+                </div>
+              )}
+              <div className="ub-bd-hero-info">
+                <h2>{selectedBarber.name}</h2>
+                <span className="ub-bd-specialty">{selectedBarber.specialty}</span>
+                <div className="ub-bd-badges">
+                  <span className={`ub-bd-status ${selectedBarber.status === "available" ? "available" : "busy"}`}>
+                    {selectedBarber.status === "available" ? "🟢 Bo'sh" : "🔴 Band"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="ub-bd-stats">
+              <div className="ub-bd-stat">
+                <FiStar />
+                <strong>{selectedBarber.rating}</strong>
+                <span>Reyting</span>
+              </div>
+              <div className="ub-bd-stat">
+                <FiClock />
+                <strong>{selectedBarber.years_experience}+ yil</strong>
+                <span>Tajriba</span>
+              </div>
+              <div className="ub-bd-stat">
+                <FiScissors />
+                <strong>{selectedBarber.total_cuts ?? 0}</strong>
+                <span>Jami kesim</span>
+              </div>
+            </div>
+
+            {selectedBarber.bio && (
+              <div className="ub-bd-section">
+                <div className="ub-bd-section-title">BIO</div>
+                <p className="ub-bd-bio">{selectedBarber.bio}</p>
+              </div>
+            )}
+
+            <div className="ub-bd-section">
+              <div className="ub-bd-section-title">XIZMAT MA'LUMOTI</div>
+              <div className="ub-bd-info-row">
+                <FiScissors />
+                <span>Yo'nalish:</span>
+                <strong>{selectedBarber.specialty}</strong>
+              </div>
+              {selectedBarber.phone && (
+                <div className="ub-bd-info-row">
+                  <FiShield />
+                  <span>Telefon:</span>
+                  <strong>{selectedBarber.phone}</strong>
+                </div>
+              )}
+            </div>
+
+            <button
+              className="ub-primary"
+              onClick={() => void confirmBarber()}
+              disabled={loading || selectedBarber.status !== "available"}
+            >
+              {loading ? "Yuklanmoqda..." : selectedBarber.status === "available" ? "Vaqtni tanlash →" : "Hozir band"}
+            </button>
+          </section>
+        ) : null}
+
         {step === "times" && selectedBarber ? (
           <section className="ub-card">
           <div className="ub-step-head">
-            <button className="ub-back" onClick={() => setStep("barbers")}>←</button>
+            <button className="ub-back" onClick={() => setStep("barber-detail")}>←</button>
             <div>
               <h3>Vaqtni tanlang</h3>
               <p>{selectedBarber.name} uchun bo'sh slotlar</p>

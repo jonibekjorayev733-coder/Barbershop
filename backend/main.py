@@ -2503,6 +2503,11 @@ def get_user_booking_barbers(db: Session = Depends(get_db)):
             "rating": item.rating,
             "years_experience": item.years_experience,
             "photo_url": item.photo_url,
+            "bio": item.bio,
+            "phone": item.phone,
+            "total_cuts": item.total_cuts,
+            "status": item.status,
+            "color": item.color,
         }
         for item in rows
     ]
@@ -3255,7 +3260,7 @@ def ensure_current_month_payments(db: Session):
     default_due_date = now.replace(day=last_day).strftime("%Y-%m-%d")
 
     enrollments = db.query(models.CourseEnrollment).all()
-    created = False
+    # end barbers list
 
     for enrollment in enrollments:
         if enrollment.student_id is None or enrollment.course_id is None:

@@ -94,6 +94,11 @@ export interface UserBookingBarberApi {
   rating: number;
   years_experience: number;
   photo_url?: string | null;
+  bio?: string | null;
+  phone?: string | null;
+  total_cuts?: number;
+  status?: string;
+  color?: string | null;
 }
 
 export interface BarberAvailabilitySlotApi {

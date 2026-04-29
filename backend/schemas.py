@@ -134,6 +134,11 @@ class UserBookingBarber(BaseModel):
     rating: float
     years_experience: int
     photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    phone: Optional[str] = None
+    total_cuts: Optional[int] = 0
+    status: Optional[str] = "available"
+    color: Optional[str] = None
 
 
 class TimeSlotAvailability(BaseModel):
