@@ -185,6 +185,11 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
   const humanDate = useMemo(() => formatHumanDate(selectedDate), [selectedDate]);
   const currentStepNumber = STEP_ORDER[step];
 
+  const today = getTashkentTodayISO();
+  const isSelectedPast = selectedDate < today;
+  const isSelectedToday = selectedDate === today;
+  const dateLabelPrefix = isSelectedToday ? "Bugun" : isSelectedPast ? "O'tgan kun" : "";
+
   const filteredBarbers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) {
@@ -273,6 +278,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
     const next = new Date(`${selectedDate}T12:00:00Z`);
     next.setUTCDate(next.getUTCDate() + days);
     const nextDate = getTashkentTodayISO(next);
+    // O'tgan kunga o'tishga ruxsat yo'q
+    if (nextDate < getTashkentTodayISO()) {
+      return;
+    }
 
     try {
       setLoading(true);
@@ -570,10 +579,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
           </div>
 
           <div className="ub-date-nav">
-            <button onClick={() => void shiftDate(-1)}>‹</button>
+            <button onClick={() => void shiftDate(-1)} disabled={isSelectedToday || isSelectedPast}>‹</button>
             <div>
-              <strong>Bugun</strong>
-              <span>{humanDate}</span>
+              <strong>{dateLabelPrefix || humanDate}</strong>
+              <span>{dateLabelPrefix ? humanDate : ""}</span>
             </div>
             <button onClick={() => void shiftDate(1)}>›</button>
           </div>
@@ -583,12 +592,13 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
             {(availability?.slots || []).map((slot) => {
               const isSelected = selectedTime === slot.time;
               const isBooked = slot.status === "booked";
+              const isPast = isSelectedPast;
               return (
                 <button
                   key={slot.time}
-                  className={`ub-slot ${isSelected ? "selected" : ""} ${isBooked ? "booked" : ""}`}
-                  disabled={isBooked}
-                  onClick={() => setSelectedTime(slot.time)}
+                  className={`ub-slot ${isSelected ? "selected" : ""} ${isBooked ? "booked" : ""} ${isPast ? "past" : ""}`}
+                  disabled={isBooked || isPast}
+                  onClick={() => !isPast && setSelectedTime(slot.time)}
                 >
                   {slot.time}
                 </button>
@@ -602,7 +612,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
             <span>◌ Band</span>
           </div>
 
-          <button className="ub-primary" onClick={continueToDetails} disabled={!selectedTime || loading}>
+          {isSelectedPast && (
+            <p className="ub-past-warning">⚠️ O'tgan kunlarga bron qilish mumkin emas. Bugun yoki keyingi kunni tanlang.</p>
+          )}
+          <button className="ub-primary" onClick={continueToDetails} disabled={!selectedTime || loading || isSelectedPast}>
             Davom etish — {selectedTime || "--"}
           </button>
           </section>

@@ -2736,6 +2736,25 @@ body::before {
     background: rgba(255, 255, 255, 0.02);
   }
 
+  .ub-slot.past {
+    text-decoration: line-through;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.01);
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ub-past-warning {
+    color: #f59e0b;
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 12px;
+    background: rgba(245, 158, 11, 0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    margin-bottom: 8px;
+  }
+
   .ub-slot.selected {
     border-color: rgba(59, 130, 246, 0.7);
     background: linear-gradient(135deg, #1d4ed8, #3b82f6);
