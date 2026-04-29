@@ -512,6 +512,7 @@ def appointment_realtime_payload(appointment: models.BarberAppointment, barber_n
         "appointment_time": appointment.appointment_time,
         "status": appointment.status,
         "service_name": appointment.service_name,
+        "created_at": appointment.created_at.isoformat() if appointment.created_at else None,
         "updated_at": appointment.updated_at.isoformat() if appointment.updated_at else None,
     }
 
@@ -2508,6 +2509,7 @@ def get_user_booking_barbers(db: Session = Depends(get_db)):
             "total_cuts": item.total_cuts,
             "status": item.status,
             "color": item.color,
+            "service_price": estimate_service_price(item.specialty),
         }
         for item in rows
     ]
@@ -2564,6 +2566,22 @@ def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session =
     if existing:
         raise HTTPException(status_code=409, detail="Bu vaqt band, boshqa vaqt tanlang")
 
+    normalized_phone = normalize_phone(payload.client_phone)
+    if normalized_phone:
+        pending_rows = db.query(models.BarberAppointment).filter(
+            models.BarberAppointment.status == "pending",
+            models.BarberAppointment.appointment_date >= today_tashkent_str(),
+        ).all()
+        duplicate_pending = next(
+            (row for row in pending_rows if normalize_phone(row.client_phone) == normalized_phone),
+            None,
+        )
+        if duplicate_pending:
+            raise HTTPException(
+                status_code=409,
+                detail="Siz avval bron qilgansiz. Sartarosh tasdiqlagach yana bron qilishingiz mumkin.",
+            )
+
     service_name = (payload.service_name or db_barber.specialty or "Haircut").strip()
     appointment = models.BarberAppointment(
         barber_id=db_barber.id,
@@ -2594,6 +2612,8 @@ def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session =
         "client_name": appointment.client_name,
         "client_phone": appointment.client_phone,
         "service_name": appointment.service_name,
+        "service_price": estimate_service_price(appointment.service_name),
+        "created_at": appointment.created_at,
         "status": appointment.status,
     }
 
@@ -2652,6 +2672,66 @@ def complete_barber_appointment(barber_id: int, appointment_id: int, db: Session
     schedule_realtime("bookings", "booking.completed", completion_event_payload)
     schedule_realtime(f"barber:{barber_id}", "booking.completed", completion_event_payload)
     return appointment
+
+
+@app.patch("/barbers/{barber_id}/appointments/{appointment_id}/approve", response_model=schemas.BarberAppointment)
+def approve_barber_appointment(barber_id: int, appointment_id: int, db: Session = Depends(get_db)):
+    return complete_barber_appointment(barber_id, appointment_id, db)
+
+
+@app.patch("/barbers/{barber_id}/appointments/{appointment_id}/reject", response_model=schemas.BarberAppointment)
+def reject_barber_appointment(barber_id: int, appointment_id: int, db: Session = Depends(get_db)):
+    appointment = db.query(models.BarberAppointment).filter(
+        models.BarberAppointment.id == appointment_id,
+        models.BarberAppointment.barber_id == barber_id,
+    ).first()
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Appointment topilmadi")
+
+    appointment.status = "cancelled"
+    appointment.updated_at = now_tashkent()
+    db.commit()
+    db.refresh(appointment)
+    db_barber = db.query(models.Barber).filter(models.Barber.id == barber_id).first()
+    reject_event_payload = appointment_realtime_payload(appointment, db_barber.name if db_barber else None)
+    schedule_realtime("bookings", "booking.cancelled", reject_event_payload)
+    schedule_realtime(f"barber:{barber_id}", "booking.cancelled", reject_event_payload)
+    return appointment
+
+
+@app.post("/barbers/{barber_id}/appointments/{appointment_id}/send-sms")
+def send_barber_appointment_sms(
+    barber_id: int,
+    appointment_id: int,
+    message: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    appointment = db.query(models.BarberAppointment).filter(
+        models.BarberAppointment.id == appointment_id,
+        models.BarberAppointment.barber_id == barber_id,
+    ).first()
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Appointment topilmadi")
+
+    sms_text = (message or "Assalomu alaykum. Broningiz qabul qilindi, tez orada siz bilan bog'lanamiz.").strip()
+    sent = send_sms_via_webhook(appointment.client_phone, sms_text)
+
+    schedule_realtime(
+        f"barber:{barber_id}",
+        "booking.sms",
+        {
+            "appointment_id": appointment.id,
+            "booking_id": format_booking_code(appointment.id),
+            "client_phone": appointment.client_phone,
+            "sent": sent,
+        },
+    )
+
+    return {
+        "success": sent,
+        "appointment_id": appointment.id,
+        "message": "SMS yuborildi" if sent else "SMS yuborilmadi",
+    }
 
 # Students
 @app.get("/students/", response_model=List[schemas.Student])

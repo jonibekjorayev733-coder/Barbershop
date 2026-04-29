@@ -70,7 +70,7 @@ export interface BarberAppointmentApi {
   client_phone: string;
   appointment_time: string;
   appointment_date: string;
-  status: "pending" | "completed";
+  status: "pending" | "completed" | "cancelled";
   service_name?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -99,6 +99,7 @@ export interface UserBookingBarberApi {
   total_cuts?: number;
   status?: string;
   color?: string | null;
+  service_price?: number;
 }
 
 export interface BarberAvailabilitySlotApi {
@@ -135,6 +136,8 @@ export interface UserBookingConfirmationApi {
   client_name: string;
   client_phone: string;
   service_name?: string | null;
+  service_price?: number | null;
+  created_at?: string;
   status: "pending" | "completed" | "cancelled";
 }
 
@@ -337,6 +340,37 @@ export async function completeBarberAppointment(barberId: number, appointmentId:
   return requestJson<BarberAppointmentApi>(`/barbers/${barberId}/appointments/${appointmentId}/complete`, {
     method: "PATCH",
   });
+}
+
+export async function approveBarberAppointment(barberId: number, appointmentId: number): Promise<BarberAppointmentApi> {
+  return requestJson<BarberAppointmentApi>(`/barbers/${barberId}/appointments/${appointmentId}/approve`, {
+    method: "PATCH",
+  });
+}
+
+export async function rejectBarberAppointment(barberId: number, appointmentId: number): Promise<BarberAppointmentApi> {
+  return requestJson<BarberAppointmentApi>(`/barbers/${barberId}/appointments/${appointmentId}/reject`, {
+    method: "PATCH",
+  });
+}
+
+export async function sendBarberAppointmentSms(
+  barberId: number,
+  appointmentId: number,
+  message?: string,
+): Promise<{ success: boolean; appointment_id: number; message: string }> {
+  const params = new URLSearchParams();
+  if (message?.trim()) {
+    params.set("message", message.trim());
+  }
+  const query = params.toString();
+
+  return requestJson<{ success: boolean; appointment_id: number; message: string }>(
+    `/barbers/${barberId}/appointments/${appointmentId}/send-sms${query ? `?${query}` : ""}`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export async function getUserBookingBarbers(): Promise<UserBookingBarberApi[]> {

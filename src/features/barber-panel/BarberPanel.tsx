@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  completeBarberAppointment,
+  approveBarberAppointment,
   getBarberAppointments,
   getBarberDashboard,
+  rejectBarberAppointment,
+  sendBarberAppointmentSms,
   updateBarberProfile,
   type BarberAppointmentApi,
   type BarberDashboardApi,
@@ -10,7 +12,7 @@ import {
 import { fileToOptimizedAvatarDataUrl } from "../../lib/avatar";
 import { emitProfileSync } from "../../lib/profileSync";
 import { subscribeRealtimeChannel } from "../../lib/realtime";
-import { formatNowInTashkent, getTashkentTodayISO } from "../../lib/time";
+import { formatDateTimeInTashkent, formatNowInTashkent, getTashkentTodayISO } from "../../lib/time";
 
 interface BarberPanelProps {
   barberId: number;
@@ -98,7 +100,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
   }, []);
 
   const humanDate = useMemo(() => {
-    return formatNowInTashkent("en-US", {
+    return formatNowInTashkent("uz-UZ", {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -142,14 +144,40 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     return unsubscribe;
   }, [barberId, filter, todayDate]);
 
-  const markAsCompleted = async (appointmentId: number) => {
+  const approveAppointment = async (appointmentId: number) => {
     try {
       setIsUpdating(appointmentId);
       setErrorMessage(null);
-      await completeBarberAppointment(barberId, appointmentId);
+      await approveBarberAppointment(barberId, appointmentId);
       await Promise.all([loadDashboard(), loadAppointments(filter)]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Status yangilanmadi.");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const rejectAppointment = async (appointmentId: number) => {
+    try {
+      setIsUpdating(appointmentId);
+      setErrorMessage(null);
+      await rejectBarberAppointment(barberId, appointmentId);
+      await Promise.all([loadDashboard(), loadAppointments(filter)]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Appointment rad etilmadi.");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const sendClientSms = async (appointmentId: number) => {
+    try {
+      setIsUpdating(appointmentId);
+      setErrorMessage(null);
+      await sendBarberAppointmentSms(barberId, appointmentId);
+      await Promise.all([loadDashboard(), loadAppointments(filter)]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "SMS yuborilmadi.");
     } finally {
       setIsUpdating(null);
     }
@@ -215,7 +243,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         <section className="bp-wrap">
           <header className="bp-head">
             <div>
-              <div className="bp-greet">Good day,</div>
+              <div className="bp-greet">Assalomu alaykum,</div>
               <h2>{dashboard?.barber_name || barberName}</h2>
               <div className="bp-date">{humanDate}</div>
             </div>
@@ -232,23 +260,23 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
               <div className="bp-stats">
                 <article className="bp-stat bp-stat-dark">
                   <strong>{dashboard?.today_total ?? 0}</strong>
-                  <span>Today</span>
+                  <span>Bugun</span>
                 </article>
                 <article className="bp-stat bp-stat-soft">
                   <strong>{dashboard?.today_done ?? 0}</strong>
-                  <span>Done</span>
+                  <span>Tasdiqlangan</span>
                 </article>
                 <article className="bp-stat">
                   <strong>{dashboard?.today_pending ?? 0}</strong>
-                  <span>Pending</span>
+                  <span>Kutilmoqda</span>
                 </article>
               </div>
 
               <div className="bp-progress-card">
                 <div className="bp-progress-top">
-                  <span>Today's Progress</span>
+                  <span>Bugungi holat</span>
                   <span>
-                    {dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} completed
+                    {dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} yakunlangan
                   </span>
                 </div>
                 <div className="bp-progress-track">
@@ -258,8 +286,8 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
               <button className="bp-link-card" onClick={() => setView("schedule")}>
                 <div>
-                  <strong>Daily Schedule</strong>
-                  <span>View all appointments</span>
+                  <strong>Kunlik jadval</strong>
+                  <span>Barcha bronlarni ko'rish</span>
                 </div>
                 <span>›</span>
               </button>
@@ -268,21 +296,21 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
             <div className="bp-side-col">
               <div className="bp-next-card">
                 <div className="bp-next-top">
-                  <span>NEXT CLIENT</span>
+                  <span>KEYINGI MIJOZ</span>
                   <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
                 </div>
-                <h3>{dashboard?.next_appointment?.client_name ?? "Hamma appointment tugagan"}</h3>
+                <h3>{dashboard?.next_appointment?.client_name ?? "Hamma bronlar yakunlangan"}</h3>
                 <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
                 <button
                   className="bp-complete-btn"
                   disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}
                   onClick={() => {
                     if (dashboard?.next_appointment) {
-                      void markAsCompleted(dashboard.next_appointment.id);
+                      void approveAppointment(dashboard.next_appointment.id);
                     }
                   }}
                 >
-                  {dashboard?.next_appointment ? "Mark as Complete" : "Completed"}
+                  {dashboard?.next_appointment ? "Tasdiqlash" : "Yakunlangan"}
                 </button>
               </div>
             </div>
@@ -290,8 +318,8 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
           <section className="bp-today-card">
             <div className="bp-list-head">
-              <h4>Today's Appointments</h4>
-              <small>{dashboard?.today_total ?? 0} total</small>
+              <h4>Bugungi bronlar</h4>
+              <small>{dashboard?.today_total ?? 0} ta</small>
             </div>
 
             <div className="bp-list">
@@ -299,18 +327,28 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 <article key={item.id} className="bp-item">
                   <div>
                     <strong>{item.client_name}</strong>
-                    <span>{item.appointment_time}</span>
+                    <span>{item.appointment_time} · {item.client_phone}</span>
+                    <small>
+                      Bron vaqti: {item.created_at
+                        ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "2-digit",
+                            month: "2-digit",
+                          })
+                        : "-"} (Toshkent)
+                    </small>
                   </div>
                   {item.status === "completed" ? (
-                    <em className="bp-chip done">Done</em>
+                    <em className="bp-chip done">Tasdiqlangan</em>
+                  ) : item.status === "cancelled" ? (
+                    <em className="bp-chip pending">Rad etilgan</em>
                   ) : (
-                    <button
-                      className="bp-chip action"
-                      disabled={isUpdating === item.id}
-                      onClick={() => void markAsCompleted(item.id)}
-                    >
-                      Done
-                    </button>
+                    <div className="bp-inline-actions">
+                      <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS</button>
+                      <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                      <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
+                    </div>
                   )}
                 </article>
               ))}
@@ -320,8 +358,8 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
           <div className="bp-mobile-actions">
             <button className="bp-link-card" onClick={() => setView("schedule")}>
               <div>
-                <strong>Daily Schedule</strong>
-                <span>View all appointments</span>
+                  <strong>Kunlik jadval</strong>
+                  <span>Barcha bronlarni ko'rish</span>
               </div>
               <span>›</span>
             </button>
@@ -332,7 +370,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
           <header className="bp-head schedule">
             <button className="bp-back" onClick={() => setView("dashboard")}>←</button>
             <div>
-              <h2>Daily Schedule</h2>
+              <h2>Kunlik jadval</h2>
               <div className="bp-date">{dashboard?.barber_name || barberName}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -344,19 +382,19 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
           </header>
 
           <div className="bp-day-block">
-            <strong>Today</strong>
+            <strong>Bugun</strong>
             <span>{humanDate}</span>
             <div className="bp-day-meta">
-              <small>{dashboard?.today_pending ?? 0} pending</small>
-              <small>{dashboard?.today_done ?? 0} completed</small>
-              <small>{dashboard?.today_total ?? 0} total</small>
+              <small>{dashboard?.today_pending ?? 0} kutilmoqda</small>
+              <small>{dashboard?.today_done ?? 0} tasdiqlangan</small>
+              <small>{dashboard?.today_total ?? 0} jami</small>
             </div>
           </div>
 
           <div className="bp-filter-row">
-            <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All</button>
-            <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Pending</button>
-            <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Completed</button>
+            <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
+            <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
+            <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
           </div>
 
           <div className="bp-schedule-list">
@@ -365,26 +403,41 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 <div className="bp-schedule-top">
                   <strong>{item.client_name}</strong>
                   <span className={`bp-chip ${item.status === "completed" ? "done" : "pending"}`}>
-                    {item.status === "completed" ? "Done" : "Pending"}
+                    {item.status === "completed" ? "Tasdiqlangan" : item.status === "cancelled" ? "Rad etilgan" : "Kutilmoqda"}
                   </span>
                 </div>
                 <div className="bp-schedule-sub">#{item.id.toString().padStart(4, "0")}</div>
                 <div className="bp-schedule-line">🕒 {item.appointment_time}</div>
                 <div className="bp-schedule-line">📞 {item.client_phone}</div>
+                <div className="bp-schedule-line">
+                  ⏱ Bron vaqti: {item.created_at
+                    ? formatDateTimeInTashkent(item.created_at, "uz-UZ", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })
+                    : "-"} (Toshkent)
+                </div>
                 {item.status === "pending" ? (
-                  <button
-                    className="bp-complete-btn"
-                    disabled={isUpdating === item.id}
-                    onClick={() => void markAsCompleted(item.id)}
-                  >
-                    {isUpdating === item.id ? "Yangilanmoqda..." : "Mark as Completed"}
-                  </button>
+                  <div className="bp-inline-actions">
+                    <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>
+                      SMS yuborish
+                    </button>
+                    <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>
+                      Tasdiqlash
+                    </button>
+                    <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>
+                      Rad etish
+                    </button>
+                  </div>
                 ) : (
-                  <div className="bp-done-note">Appointment completed</div>
+                  <div className="bp-done-note">{item.status === "completed" ? "Bron tasdiqlangan" : "Bron rad etilgan"}</div>
                 )}
               </article>
             ))}
-            {appointments.length === 0 ? <div className="bp-empty">Bugunga appointment yo'q</div> : null}
+            {appointments.length === 0 ? <div className="bp-empty">Bugunga bron yo'q</div> : null}
           </div>
         </section>
       )}

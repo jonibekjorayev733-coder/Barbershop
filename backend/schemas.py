@@ -139,6 +139,7 @@ class UserBookingBarber(BaseModel):
     total_cuts: Optional[int] = 0
     status: Optional[str] = "available"
     color: Optional[str] = None
+    service_price: Optional[float] = 0
 
 
 class TimeSlotAvailability(BaseModel):
@@ -175,6 +176,8 @@ class UserBookingConfirmation(BaseModel):
     client_name: str
     client_phone: str
     service_name: Optional[str] = None
+    service_price: Optional[float] = None
+    created_at: Optional[datetime] = None
     status: str
 
 

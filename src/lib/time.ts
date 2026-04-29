@@ -32,3 +32,15 @@ export function formatIsoDateInTashkent(
 export function formatNowInTashkent(locale: string, options: Intl.DateTimeFormatOptions): string {
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: TASHKENT_TIME_ZONE }).format(new Date());
 }
+
+export function formatDateTimeInTashkent(
+  dateTime: string | Date,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const value = dateTime instanceof Date ? dateTime : new Date(dateTime);
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: TASHKENT_TIME_ZONE }).format(value);
+}

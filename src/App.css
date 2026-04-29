@@ -3929,3 +3929,85 @@ body::before {
     margin-top: 10px;
   }
 }
+
+.ub-page-title {
+  font-size: clamp(1.8rem, 2.8vw, 2.7rem);
+  line-height: 1.15;
+}
+
+.ub-page-sub {
+  font-size: 0.98rem;
+}
+
+.ub-step-head h3,
+.ub-card h3 {
+  font-size: clamp(1.65rem, 2.1vw, 2.1rem);
+}
+
+.ub-step-head p,
+.ub-card > p {
+  font-size: 0.95rem;
+}
+
+.ub-primary,
+.ub-secondary {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+
+.ub-booking-summary,
+.ub-success-summary,
+.ub-summary {
+  border-radius: 14px;
+}
+
+.ub-inline-info {
+  font-size: 0.98rem;
+}
+
+.bp-greet {
+  font-size: 1rem;
+}
+
+.bp-head h2 {
+  font-size: clamp(1.45rem, 1.9vw, 1.9rem);
+}
+
+.bp-stat strong {
+  font-size: clamp(1.6rem, 2vw, 2.1rem);
+}
+
+.bp-next-card h3 {
+  font-size: clamp(1.05rem, 1.35vw, 1.25rem);
+}
+
+.bp-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bp-item .bp-inline-actions {
+  justify-content: flex-end;
+}
+
+.bp-chip.action {
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.bp-chip.action.danger {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(185, 28, 28, 0.16));
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fecaca;
+}
+
+.bp-item small {
+  display: block;
+  margin-top: 6px;
+  color: #9fb0cd;
+  font-size: 0.8rem;
+}

@@ -22,7 +22,7 @@ import {
 import { fileToOptimizedAvatarDataUrl } from "../../lib/avatar";
 import { emitProfileSync, subscribeProfileSync } from "../../lib/profileSync";
 import { subscribeRealtimeChannel } from "../../lib/realtime";
-import { formatIsoDateInTashkent, getTashkentTodayISO } from "../../lib/time";
+import { formatDateTimeInTashkent, formatIsoDateInTashkent, getTashkentTodayISO } from "../../lib/time";
 
 interface UserPanelProps {
   userId: number;
@@ -64,6 +64,11 @@ function getInitials(name: string): string {
     return "SB";
   }
   return parts.map((item) => item[0]?.toUpperCase() ?? "").join("");
+}
+
+function formatPrice(value?: number | null): string {
+  const amount = typeof value === "number" ? value : 0;
+  return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
 }
 
 export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProfileUpdated, onLogout }: UserPanelProps) {
@@ -342,21 +347,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
     }
   };
 
-  const resetFlow = async () => {
-    setStep("barbers");
-    setSelectedTime("");
-    setSelectedBarber(null);
-    setAvailability(null);
-    setConfirmation(null);
-    setErrorMessage(null);
-    try {
-      const rows = await getUserBookingBarbers();
-      setBarbers(rows);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Sartaroshlar yuklanmadi.");
-    }
-  };
-
   const shareBooking = async () => {
     if (!confirmation) {
       return;
@@ -369,7 +359,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Sharp Cuts bron tafsilotlari",
+          title: "Bron tafsilotlari",
           text,
         });
         setShareMessage("Bron tafsilotlari ulashildi.");
@@ -381,6 +371,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
     } catch {
       setShareMessage("Ulashishda xatolik bo'ldi.");
     }
+  };
+
+  const goHome = () => {
+    window.location.href = "/";
   };
 
   return (
@@ -492,7 +486,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
               <div className="ub-hero-card">
                 <div className="ub-logo-row">
                   <div className="ub-logo-icon"><FiScissors /></div>
-                  <div className="ub-brand">SHARP CUTS</div>
+                  <div className="ub-brand">SARTAROSHXONA</div>
                 </div>
                 <h2 className="ub-title ub-title-compact">Sartaroshni tanlang</h2>
                 <p className="ub-list-sub">Ro'yxatdan usta tanlang, vaqt belgilang va bronni tez yakunlang.</p>
@@ -614,6 +608,11 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
                 <span>Yo'nalish:</span>
                 <strong>{selectedBarber.specialty}</strong>
               </div>
+              <div className="ub-bd-info-row">
+                <FiStar />
+                <span>Xizmat narxi:</span>
+                <strong>{formatPrice(selectedBarber.service_price)}</strong>
+              </div>
               {selectedBarber.phone && (
                 <div className="ub-bd-info-row">
                   <FiShield />
@@ -722,6 +721,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
             </div>
             <div className="ub-inline-info"><FiCalendar /> {humanDate}</div>
             <div className="ub-inline-info"><FiClock /> {selectedTime}</div>
+            <div className="ub-inline-info"><FiScissors /> {formatPrice(selectedBarber.service_price)}</div>
           </div>
 
           <label className="ub-field">
@@ -749,7 +749,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
             <span className="ub-success-badge"><FiCheck /></span>
           </div>
           <h3>Barchasi tayyor!</h3>
-          <p>Broningiz muvaffaqiyatli tasdiqlandi</p>
+          <p>Broningiz qabul qilindi, tez orada siz bilan bog'lanamiz.</p>
 
           <div className="ub-success-summary">
             <div className="ub-success-row">
@@ -772,13 +772,27 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
             <div>{formatHumanDate(confirmation.appointment_date)}</div>
             <div>{confirmation.appointment_time}</div>
+            <div>Narxi: {formatPrice(confirmation.service_price)}</div>
+            <div>
+              Bron vaqti: {confirmation.created_at
+                ? formatDateTimeInTashkent(confirmation.created_at, "uz-UZ", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "-"} (Toshkent)
+            </div>
             <div>Mijoz: {confirmation.client_name}</div>
           </div>
 
+          <div className="ub-share-note">✅ Siz bilan telefon orqali bog'lanamiz.</div>
+
           {shareMessage ? <div className="ub-share-note">{shareMessage}</div> : null}
 
-          <button className="ub-primary" onClick={() => void resetFlow()}>
-            Yana bron qilish
+          <button className="ub-primary" onClick={goHome}>
+            Bosh sahifaga o'tish
           </button>
 
           <button className="ub-secondary" onClick={() => void shareBooking()}>
