@@ -20,6 +20,7 @@ interface UserPanelProps {
   userName: string;
   userEmail?: string;
   userAvatar?: string | null;
+  preferredBarberId?: number | null;
   onProfileUpdated?: (payload: { name: string; email: string; avatar?: string | null }) => void;
   onLogout: () => void;
 }
@@ -69,7 +70,7 @@ function formatDiscount(discount?: number | null): string {
   return value > 0 ? `${Math.round(value)}% skidka` : "Skidka yo'q";
 }
 
-export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProfileUpdated, onLogout }: UserPanelProps) {
+export function UserPanel({ userId, userName, userEmail = "", userAvatar, preferredBarberId = null, onProfileUpdated, onLogout }: UserPanelProps) {
   const [view, setView] = useState<UserView>("booking");
   const [step, setStep] = useState<UserBookingStep>("barbers");
   const [barbers, setBarbers] = useState<UserBookingBarberApi[]>([]);
@@ -600,7 +601,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
                         </div>
                         <div className="ub-barber-list">
                           {filteredBarbers.map((barber) => (
-                            <button key={barber.id} className="ub-barber-row" onClick={() => void pickBarber(barber)}>
+                            <button key={barber.id} className={`ub-barber-row ${preferredBarberId === barber.id ? "preferred" : ""}`} onClick={() => void pickBarber(barber)}>
                               {barber.photo_url ? (
                                 <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
                               ) : (

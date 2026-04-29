@@ -15,7 +15,8 @@ import {
 import { LoginPage } from "./features/auth/LoginPage";
 import { BarberPanel } from "./features/barber-panel/BarberPanel";
 import { UserPanel } from "./features/user-panel/UserPanel";
-import { PublicLandingPage } from "./features/public/PublicLandingPage";
+import { PublicMapLandingPage } from "./features/public/PublicMapLandingPage";
+import { PublicLoginPage } from "./features/public/PublicLoginPage";
 import type { Page } from "./features/admin-panel/types";
 import { subscribeProfileSync } from "./lib/profileSync";
 
@@ -30,6 +31,20 @@ interface AppSession {
 }
 
 const SESSION_STORAGE_KEY = "sharpcuts_session";
+const PREFERRED_BARBER_STORAGE_KEY = "sharpcuts_preferred_barber";
+
+function readPreferredBarberId(): number | null {
+  try {
+    const raw = sessionStorage.getItem(PREFERRED_BARBER_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 function persistSession(session: AppSession): void {
   try {
@@ -103,6 +118,8 @@ function toSession(response: LoginResponse): AppSession {
 export default function App() {
   const [page, setPage] = useState<Page>("dashboard");
   const [session, setSession] = useState<AppSession | null>(() => readStoredSession());
+  const [preAuthPage, setPreAuthPage] = useState<"landing" | "login">("landing");
+  const [preferredBarberId, setPreferredBarberId] = useState<number | null>(() => readPreferredBarberId());
 
   const isAdmin = session?.role === "admin";
   const isBarber = session?.role === "barber";
@@ -120,12 +137,24 @@ export default function App() {
     setSession(nextSession);
     persistSession(nextSession);
     setPage("dashboard");
+    setPreAuthPage("landing");
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
     setPage("dashboard");
+    setPreAuthPage("landing");
+  };
+
+  const handleStartLogin = () => {
+    setPreAuthPage("login");
+  };
+
+  const handleSelectPublicBarber = (barberId: number) => {
+    setPreferredBarberId(barberId);
+    sessionStorage.setItem(PREFERRED_BARBER_STORAGE_KEY, String(barberId));
+    setPreAuthPage("login");
   };
 
   useEffect(() => {
@@ -267,7 +296,11 @@ export default function App() {
   }, [session?.userId, session?.role]);
 
   if (!session) {
-    return <PublicLandingPage onLogin={handleLogin} />;
+    if (preAuthPage === "login") {
+      return <PublicLoginPage onLogin={handleLogin} onBack={() => setPreAuthPage("landing")} />;
+    }
+
+    return <PublicMapLandingPage onStartLogin={handleStartLogin} onSelectBarber={handleSelectPublicBarber} />;
   }
 
   if (isBarber) {
@@ -275,7 +308,7 @@ export default function App() {
   }
 
   if (isUser) {
-    return <UserPanel userId={session.userId} userName={userDisplayName} userEmail={session.email} userAvatar={session.avatar} onProfileUpdated={handleProfileUpdated} onLogout={handleLogout} />;
+    return <UserPanel userId={session.userId} userName={userDisplayName} userEmail={session.email} userAvatar={session.avatar} preferredBarberId={preferredBarberId} onProfileUpdated={handleProfileUpdated} onLogout={handleLogout} />;
   }
 
   if (!isAdmin) {
