@@ -3453,3 +3453,197 @@ body::before {
   background: linear-gradient(135deg, #6366f1, #818cf8);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
 }
+
+/* ===== Glassmorphism Refresh (User + Barber Panels) ===== */
+
+.bp-shell,
+.ub-shell {
+  background:
+    radial-gradient(55rem 30rem at -8% -10%, rgba(96, 165, 250, 0.22), transparent 62%),
+    radial-gradient(46rem 28rem at 112% 112%, rgba(167, 139, 250, 0.2), transparent 64%),
+    linear-gradient(135deg, #050914 0%, #070d18 52%, #080e1d 100%);
+}
+
+.bp-wrap,
+.ub-page-head,
+.ub-process-step,
+.ub-card,
+.ub-barbers-list-wrap,
+.bp-stat,
+.bp-progress-card,
+.bp-next-card,
+.bp-link-card,
+.bp-item,
+.bp-day-block,
+.bp-filter-row,
+.bp-schedule-item {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 36px rgba(2, 8, 23, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.bp-wrap,
+.ub-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.bp-wrap::before,
+.ub-card::before {
+  content: "";
+  position: absolute;
+  inset: -30% auto auto -22%;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(148, 197, 255, 0.2), transparent 68%);
+  pointer-events: none;
+}
+
+.ub-page-head {
+  border-radius: 24px;
+}
+
+.ub-process-step.active,
+.ub-process-step.done {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(140deg, rgba(37, 99, 235, 0.24), rgba(99, 102, 241, 0.14));
+}
+
+.ub-kpi-item,
+.ub-benefit-card,
+.ub-barber-row,
+.ub-summary,
+.ub-date-nav,
+.ub-booking-summary,
+.ub-success-summary,
+.bp-chip.action,
+.bp-filter-row button.active {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.ub-search-input,
+.ub-field input,
+.bp-filter-row,
+.bp-filter-row button,
+.bp-complete-btn,
+.ub-primary,
+.ub-secondary,
+.bp-logout,
+.bp-back,
+.ub-logout,
+.ub-back,
+.ub-back-btn,
+.bp-link-card,
+.ub-go {
+  transition: all .22s ease;
+}
+
+.ub-search-input,
+.ub-field input {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ub-search-input::placeholder,
+.ub-field input::placeholder {
+  color: rgba(226, 232, 240, 0.58);
+}
+
+.ub-primary,
+.bp-complete-btn,
+.bp-chip.action {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(99, 102, 241, 0.92));
+  color: #eef5ff;
+  border: 1px solid rgba(191, 219, 254, 0.32);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.34);
+}
+
+.ub-secondary,
+.ub-logout,
+.bp-logout,
+.bp-back,
+.ub-back,
+.ub-back-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e6efff;
+}
+
+.ub-primary:hover,
+.bp-complete-btn:hover,
+.bp-chip.action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.45);
+}
+
+.ub-barber-row:hover,
+.bp-item:hover,
+.bp-schedule-item:hover,
+.bp-link-card:hover {
+  border-color: rgba(147, 197, 253, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(2, 8, 23, 0.4);
+}
+
+.bp-head h2,
+.ub-page-title,
+.ub-title,
+.ub-bd-hero-info h2 {
+  color: #f8fbff;
+}
+
+.bp-date,
+.bp-greet,
+.ub-page-sub,
+.ub-barber-info span,
+.ub-barber-info small,
+.bp-item span,
+.bp-day-block span,
+.bp-day-meta small,
+.bp-schedule-sub,
+.bp-schedule-line {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.bp-stat-dark,
+.bp-stat-soft {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.bp-progress-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.bp-progress-fill {
+  background: linear-gradient(90deg, #60a5fa, #818cf8);
+}
+
+.bp-chip.done {
+  background: rgba(34, 197, 94, 0.24);
+  border: 1px solid rgba(134, 239, 172, 0.42);
+}
+
+.bp-chip.pending {
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(252, 211, 77, 0.38);
+}
+
+@media (max-width: 768px) {
+  .bp-shell,
+  .ub-shell {
+    padding: 10px;
+  }
+
+  .bp-wrap,
+  .ub-card,
+  .ub-page-head {
+    border-radius: 18px;
+  }
+}
