@@ -488,25 +488,67 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
 
         {step === "barbers" ? (
           <section className="ub-card ub-card-barbers">
-            <div className="ub-barbers-layout">
-              <div className="ub-barbers-intro">
-                <div className="ub-logo-row">
-                  <div className="ub-logo-icon"><FiScissors /></div>
-                  <div className="ub-brand">SHARP CUTS</div>
+            <div className="ub-layout-v2">
+              <div className="ub-main-column">
+                <div className="ub-list-head-v2">
+                  <div className="ub-logo-row">
+                    <div className="ub-logo-icon"><FiScissors /></div>
+                    <div className="ub-brand">SHARP CUTS</div>
+                  </div>
+                  <h2 className="ub-title ub-title-compact">Sartaroshni tanlang va bronni boshlang</h2>
+                  <p className="ub-list-sub">Avval ustani tanlang, keyin vaqtni tanlab bir necha bosqichda yakunlang.</p>
                 </div>
 
-                <div className="ub-welcome">
-                  <span>QAYTGANINGIZDAN XURSANDMIZ</span>
-                  <strong>{userName || "Mehmon"}</strong>
+                <div className="ub-barbers-list-wrap">
+                  <div className="ub-section-title">SARTAROSHLAR RO'YXATI</div>
+
+                  <div className="ub-search-wrap">
+                    <input
+                      className="ub-search-input"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Sartarosh yoki xizmat bo'yicha qidiring..."
+                    />
+                  </div>
+
+                  <div className="ub-barber-list">
+                    {filteredBarbers.map((barber) => (
+                      <button key={barber.id} className="ub-barber-row" onClick={() => void pickBarber(barber)}>
+                        {barber.photo_url ? (
+                          <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
+                        ) : (
+                          <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(barber.name)}</div>
+                        )}
+
+                        <div className="ub-barber-info">
+                          <strong>{barber.name}</strong>
+                          <span>{barber.specialty}</span>
+                          <small>
+                            <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
+                            <span className="ub-meta-sep">·</span>
+                            <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil tajriba</span>
+                          </small>
+                        </div>
+
+                        <span className="ub-go"><FiArrowRight /></span>
+                      </button>
+                    ))}
+                    {!loading && filteredBarbers.length === 0 ? <div className="ub-empty">Mos sartarosh topilmadi.</div> : null}
+                  </div>
+                </div>
+              </div>
+
+              <aside className="ub-side-column">
+                <div className="ub-side-card">
+                  <div className="ub-side-title">Qanday ishlaydi?</div>
+                  <div className="ub-side-steps">
+                    <div><span>1</span>Sartaroshni tanlang</div>
+                    <div><span>2</span>Bo'sh vaqtni belgilang</div>
+                    <div><span>3</span>Ma'lumotni tasdiqlang</div>
+                  </div>
                 </div>
 
-                <h2 className="ub-title">
-                  O'zingizga mos
-                  <strong>bronni tanlang</strong>
-                </h2>
-                <p>Eng yaxshi ustani tanlang, qulay vaqtni band qiling va navbatingizni oldindan belgilang.</p>
-
-                <div className="ub-benefits">
+                <div className="ub-benefits ub-benefits-compact">
                   <div className="ub-benefit-card">
                     <span><FiZap /> Tezkor bron</span>
                     <strong>1 daqiqadan kam vaqtda</strong>
@@ -520,45 +562,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, onProf
                     <strong>har doim yangilanib turadi</strong>
                   </div>
                 </div>
-              </div>
-
-              <div className="ub-barbers-list-wrap">
-                <div className="ub-section-title">MAVJUD SARTAROSHLAR</div>
-
-                <div className="ub-search-wrap">
-                  <input
-                    className="ub-search-input"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Sartarosh yoki xizmat bo'yicha qidiring..."
-                  />
-                </div>
-
-                <div className="ub-barber-list">
-                  {filteredBarbers.map((barber) => (
-                    <button key={barber.id} className="ub-barber-row" onClick={() => void pickBarber(barber)}>
-                      {barber.photo_url ? (
-                        <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
-                      ) : (
-                        <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(barber.name)}</div>
-                      )}
-
-                      <div className="ub-barber-info">
-                        <strong>{barber.name}</strong>
-                        <span>{barber.specialty}</span>
-                        <small>
-                          <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
-                          <span className="ub-meta-sep">·</span>
-                          <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil tajriba</span>
-                        </small>
-                      </div>
-
-                      <span className="ub-go"><FiArrowRight /></span>
-                    </button>
-                  ))}
-                  {!loading && filteredBarbers.length === 0 ? <div className="ub-empty">Mos sartarosh topilmadi.</div> : null}
-                </div>
-              </div>
+              </aside>
             </div>
           </section>
         ) : null}

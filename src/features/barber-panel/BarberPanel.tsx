@@ -227,60 +227,66 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
             </div>
           </header>
 
-          <div className="bp-stats">
-            <article className="bp-stat bp-stat-dark">
-              <strong>{dashboard?.today_total ?? 0}</strong>
-              <span>Today</span>
-            </article>
-            <article className="bp-stat bp-stat-soft">
-              <strong>{dashboard?.today_done ?? 0}</strong>
-              <span>Done</span>
-            </article>
-            <article className="bp-stat">
-              <strong>{dashboard?.today_pending ?? 0}</strong>
-              <span>Pending</span>
-            </article>
-          </div>
+          <div className="bp-dashboard-grid">
+            <div className="bp-main-col">
+              <div className="bp-stats">
+                <article className="bp-stat bp-stat-dark">
+                  <strong>{dashboard?.today_total ?? 0}</strong>
+                  <span>Today</span>
+                </article>
+                <article className="bp-stat bp-stat-soft">
+                  <strong>{dashboard?.today_done ?? 0}</strong>
+                  <span>Done</span>
+                </article>
+                <article className="bp-stat">
+                  <strong>{dashboard?.today_pending ?? 0}</strong>
+                  <span>Pending</span>
+                </article>
+              </div>
 
-          <div className="bp-progress-card">
-            <div className="bp-progress-top">
-              <span>Today's Progress</span>
-              <span>
-                {dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} completed
-              </span>
+              <div className="bp-progress-card">
+                <div className="bp-progress-top">
+                  <span>Today's Progress</span>
+                  <span>
+                    {dashboard?.today_done ?? 0}/{dashboard?.today_total ?? 0} completed
+                  </span>
+                </div>
+                <div className="bp-progress-track">
+                  <div className="bp-progress-fill" style={{ width: `${Math.round((dashboard?.progress_ratio ?? 0) * 100)}%` }} />
+                </div>
+              </div>
+
+              <button className="bp-link-card" onClick={() => setView("schedule")}>
+                <div>
+                  <strong>Daily Schedule</strong>
+                  <span>View all appointments</span>
+                </div>
+                <span>›</span>
+              </button>
             </div>
-            <div className="bp-progress-track">
-              <div className="bp-progress-fill" style={{ width: `${Math.round((dashboard?.progress_ratio ?? 0) * 100)}%` }} />
+
+            <div className="bp-side-col">
+              <div className="bp-next-card">
+                <div className="bp-next-top">
+                  <span>NEXT CLIENT</span>
+                  <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
+                </div>
+                <h3>{dashboard?.next_appointment?.client_name ?? "Hamma appointment tugagan"}</h3>
+                <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
+                <button
+                  className="bp-complete-btn"
+                  disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}
+                  onClick={() => {
+                    if (dashboard?.next_appointment) {
+                      void markAsCompleted(dashboard.next_appointment.id);
+                    }
+                  }}
+                >
+                  {dashboard?.next_appointment ? "Mark as Complete" : "Completed"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="bp-next-card">
-            <div className="bp-next-top">
-              <span>NEXT CLIENT</span>
-              <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
-            </div>
-            <h3>{dashboard?.next_appointment?.client_name ?? "Hamma appointment tugagan"}</h3>
-            <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
-            <button
-              className="bp-complete-btn"
-              disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}
-              onClick={() => {
-                if (dashboard?.next_appointment) {
-                  void markAsCompleted(dashboard.next_appointment.id);
-                }
-              }}
-            >
-              {dashboard?.next_appointment ? "Mark as Complete" : "Completed"}
-            </button>
-          </div>
-
-          <button className="bp-link-card" onClick={() => setView("schedule")}>
-            <div>
-              <strong>Daily Schedule</strong>
-              <span>View all appointments</span>
-            </div>
-            <span>›</span>
-          </button>
 
           <div className="bp-list-head">
             <h4>Today's Appointments</h4>

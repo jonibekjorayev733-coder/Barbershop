@@ -3635,6 +3635,114 @@ body::before {
   border: 1px solid rgba(252, 211, 77, 0.38);
 }
 
+.ub-layout-v2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.7fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.ub-main-column,
+.ub-side-column {
+  min-width: 0;
+}
+
+.ub-list-head-v2 {
+  margin-bottom: 12px;
+}
+
+.ub-title-compact {
+  font-size: clamp(1.65rem, 2.5vw, 2rem);
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+
+.ub-list-sub {
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 0.95rem;
+}
+
+.ub-side-card {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 12px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.ub-side-title {
+  color: #f8fbff;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.ub-side-steps {
+  display: grid;
+  gap: 8px;
+}
+
+.ub-side-steps > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(226, 232, 240, 0.88);
+  font-weight: 500;
+  font-size: 0.92rem;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ub-side-steps > div > span {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #e8f2ff;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(99, 102, 241, 0.92));
+}
+
+.ub-benefits-compact {
+  display: grid;
+  gap: 10px;
+}
+
+.ub-barber-list {
+  max-height: min(66vh, 640px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.bp-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.bp-main-col,
+.bp-side-col {
+  min-width: 0;
+}
+
+.bp-main-col .bp-stats {
+  margin-bottom: 12px;
+}
+
+.bp-main-col .bp-progress-card {
+  margin-bottom: 12px;
+}
+
+.bp-side-col .bp-next-card {
+  height: 100%;
+}
+
 @media (max-width: 768px) {
   .bp-shell,
   .ub-shell {
@@ -3645,5 +3753,14 @@ body::before {
   .ub-card,
   .ub-page-head {
     border-radius: 18px;
+  }
+
+  .ub-layout-v2,
+  .bp-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-barber-list {
+    max-height: none;
   }
 }
