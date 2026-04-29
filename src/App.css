@@ -2064,30 +2064,31 @@ body::before {
 
   .ub-shell {
     min-height: 100vh;
-    padding: 22px 18px 30px;
+    padding: 32px 24px 48px;
     background:
-      radial-gradient(50rem 22rem at 80% 0%, rgba(59, 130, 246, 0.07), transparent 60%),
-      radial-gradient(38rem 20rem at 0% 100%, rgba(99, 102, 241, 0.05), transparent 60%),
-      linear-gradient(180deg, #050507 0%, #070709 55%, #06060a 100%);
+      radial-gradient(ellipse 120% 90% at 20% -15%, rgba(59, 130, 246, 0.22), transparent 55%),
+      radial-gradient(ellipse 100% 80% at 85% 95%, rgba(139, 92, 246, 0.18), transparent 60%),
+      radial-gradient(ellipse 80% 70% at 50% 50%, rgba(14, 165, 233, 0.08), transparent 65%),
+      linear-gradient(180deg, #0a0e1a 0%, #0d1320 35%, #050811 100%);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .ub-shell::before {
     content: "";
-    position: absolute;
-    width: 38rem;
-    height: 38rem;
-    right: -12rem;
-    top: -16rem;
-    border-radius: 999px;
-    background: radial-gradient(circle, rgba(37, 99, 235, 0.2), transparent 70%);
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle 50rem at 85% -10%, rgba(59, 130, 246, 0.15), transparent 70%),
+      radial-gradient(circle 40rem at -5% 105%, rgba(168, 85, 247, 0.12), transparent 65%),
+      radial-gradient(circle 35rem at 50% 50%, rgba(14, 165, 233, 0.06), transparent 75%);
     pointer-events: none;
-    z-index: 0;
   }
 
   .ub-container {
-    width: min(1320px, 100%);
+    width: min(1380px, 100%);
     margin: 0 auto;
     position: relative;
     z-index: 1;
@@ -2096,171 +2097,204 @@ body::before {
   .ub-top-actions {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
 
   .ub-page-head {
-    width: min(1320px, 100%);
-    margin: 0 auto 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 18px;
-    background: linear-gradient(160deg, rgba(14, 14, 20, 0.9), rgba(8, 8, 14, 0.82));
-    padding: 16px 18px;
+    width: min(1380px, 100%);
+    margin: 0 auto 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(15, 17, 30, 0.88), rgba(10, 12, 22, 0.92));
+    padding: 28px 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 32px;
+    backdrop-filter: blur(20px);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.25),
+      0 8px 32px rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .ub-page-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .11em;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
     text-transform: uppercase;
-    color: #60a5fa;
-    margin-bottom: 4px;
+    color: #64b5f6;
+    margin-bottom: 8px;
   }
 
   .ub-page-title {
-    font-size: clamp(22px, 2.6vw, 34px);
-    letter-spacing: -.02em;
-    color: #f8fafc;
-    line-height: 1.05;
+    font-size: clamp(28px, 3vw, 40px);
+    letter-spacing: -.025em;
+    color: #ffffff;
+    line-height: 1.1;
+    font-weight: 900;
   }
 
   .ub-page-sub {
-    margin-top: 4px;
-    color: #94a3b8;
-    font-size: 13px;
+    margin-top: 8px;
+    color: #a0aec0;
+    font-size: 15px;
+    font-weight: 500;
   }
 
   .ub-kpi-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    width: min(460px, 100%);
+    gap: 12px;
+    width: min(540px, 100%);
   }
 
   .ub-kpi-item {
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 12px;
-    background: rgba(15, 23, 42, 0.45);
-    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.85), rgba(15, 18, 30, 0.92));
+    padding: 14px 16px;
     display: grid;
-    gap: 3px;
+    gap: 4px;
+    backdrop-filter: blur(12px);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.2),
+      0 4px 14px rgba(255, 255, 255, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .ub-kpi-item span {
-    font-size: 11px;
-    color: #94a3b8;
-    font-weight: 600;
+    font-size: 12px;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: .05em;
   }
 
   .ub-kpi-item strong {
-    font-size: 18px;
-    color: #f8fafc;
+    font-size: 22px;
+    color: #ffffff;
     line-height: 1;
+    font-weight: 900;
   }
 
   .ub-process {
-    width: min(1320px, 100%);
-    margin: 0 auto 12px;
+    width: min(1380px, 100%);
+    margin: 0 auto 24px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 12px;
   }
 
   .ub-process-step {
-    border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    background: rgba(15, 23, 42, 0.35);
-    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all .2s ease;
+    gap: 10px;
+    transition: all .3s cubic-bezier(0.23, 1, 0.320, 1);
+    backdrop-filter: blur(12px);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.2),
+      0 4px 12px rgba(255, 255, 255, 0.05);
   }
 
   .ub-process-step span {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 900;
     color: #cbd5e1;
-    background: rgba(148, 163, 184, 0.25);
+    background: rgba(255, 255, 255, 0.12);
     flex-shrink: 0;
   }
 
   .ub-process-step strong {
-    font-size: 12px;
-    color: #94a3b8;
-    font-weight: 600;
-    letter-spacing: .01em;
+    font-size: 13px;
+    color: #cbd5e1;
+    font-weight: 700;
+    letter-spacing: .02em;
   }
 
   .ub-process-step.active {
-    border-color: rgba(59, 130, 246, 0.45);
-    background: rgba(30, 64, 175, 0.22);
+    border-color: rgba(96, 165, 250, 0.6);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.28), rgba(59, 130, 246, 0.18));
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 8px 20px rgba(59, 130, 246, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   .ub-process-step.active span,
   .ub-process-step.done span {
     color: #ffffff;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
   }
 
   .ub-process-step.active strong,
   .ub-process-step.done strong {
-    color: #e2e8f0;
+    color: #f0f4f8;
   }
 
   .ub-logout {
     border: 1px solid rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.05);
     color: #dbeafe;
-    min-height: 38px;
-    padding: 0 16px;
+    min-height: 40px;
+    padding: 0 18px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    backdrop-filter: blur(6px);
-    transition: all .22s ease;
+    backdrop-filter: blur(8px);
+    transition: all .25s ease;
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      0 2px 8px rgba(255, 255, 255, 0.05);
   }
 
   .ub-logout:hover {
-    border-color: rgba(59, 130, 246, 0.5);
-    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(96, 165, 250, 0.6);
+    background: rgba(59, 130, 246, 0.15);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 6px 16px rgba(59, 130, 246, 0.2);
   }
 
   .ub-error {
-    width: min(1100px, 100%);
-    margin: 0 auto 12px;
+    width: min(1320px, 100%);
+    margin: 0 auto 16px;
     border-radius: 14px;
-    border: 1px solid rgba(248, 113, 113, 0.45);
-    background: rgba(153, 27, 27, 0.24);
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    background: rgba(127, 29, 29, 0.3);
     color: #fecaca;
-    font-size: 13px;
-    padding: 12px 14px;
+    font-size: 14px;
+    padding: 14px 16px;
+    font-weight: 500;
   }
 
   .ub-card {
-    width: min(1320px, 100%);
+    width: min(1380px, 100%);
     margin: 0 auto;
-    border-radius: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: linear-gradient(145deg, rgba(14, 14, 20, 0.94), rgba(8, 8, 14, 0.95));
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(145deg, rgba(15, 17, 30, 0.92), rgba(10, 12, 22, 0.95));
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.25),
+      0 16px 48px rgba(255, 255, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     color: #f8fafc;
-    padding: 24px;
+    padding: 32px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    backdrop-filter: blur(16px);
+    gap: 16px;
+    backdrop-filter: blur(24px);
     position: relative;
   }
 
@@ -2270,7 +2304,7 @@ body::before {
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(120deg, rgba(59, 130, 246, 0.25), rgba(255, 255, 255, 0.04), rgba(59, 130, 246, 0.15));
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.18), rgba(96, 165, 250, 0.1), rgba(255, 255, 255, 0.08));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
@@ -2318,18 +2352,23 @@ body::before {
   }
 
   .ub-search-wrap {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .ub-search-input {
     width: 100%;
-    height: 40px;
-    border-radius: 10px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    background: rgba(255, 255, 255, 0.05);
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
     color: #e2e8f0;
-    padding: 0 12px;
-    font-size: 13px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all .25s ease;
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.05);
   }
 
   .ub-search-input::placeholder {
@@ -2337,8 +2376,11 @@ body::before {
   }
 
   .ub-search-input:focus {
-    border-color: rgba(59, 130, 246, 0.45);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+    border-color: rgba(96, 165, 250, 0.6);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 0 0 3px rgba(96, 165, 250, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.08);
     outline: none;
   }
 
@@ -2700,35 +2742,46 @@ body::before {
   .ub-barber-row {
     width: 100%;
     border-radius: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.54));
-    padding: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-align: left;
-    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    transition: all .25s cubic-bezier(0.23, 1, 0.320, 1);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      0 4px 12px rgba(255, 255, 255, 0.06);
   }
 
   .ub-barber-row:hover {
-    transform: translateY(-1px);
-    border-color: rgba(59, 130, 246, 0.5);
-    background: linear-gradient(135deg, rgba(30, 64, 175, 0.28), rgba(15, 23, 42, 0.62));
-    box-shadow: 0 12px 24px rgba(2, 8, 22, 0.35);
+    transform: translateY(-2px);
+    border-color: rgba(96, 165, 250, 0.5);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(30, 64, 175, 0.18));
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 12px 28px rgba(59, 130, 246, 0.25);
   }
 
   .ub-go {
     margin-left: auto;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
     color: #ffffff;
     font-size: 17px;
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 6px 18px rgba(96, 165, 250, 0.35);
+    transition: all .25s ease;
+  }
+
+  .ub-go:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(96, 165, 250, 0.45);
   }
 
   .ub-go svg {
@@ -2877,29 +2930,36 @@ body::before {
   .ub-slots-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 12px;
   }
 
   .ub-slot {
-    min-height: 44px;
+    min-height: 46px;
     border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
     color: #e2e8f0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    transition: all .2s ease;
+    transition: all .25s cubic-bezier(0.23, 1, 0.320, 1);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      0 2px 8px rgba(255, 255, 255, 0.05);
   }
 
   .ub-slot:hover {
-    border-color: rgba(59, 130, 246, 0.42);
-    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(96, 165, 250, 0.5);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(30, 64, 175, 0.18));
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.3),
+      0 6px 16px rgba(59, 130, 246, 0.2);
   }
 
   .ub-slot.booked {
     text-decoration: line-through;
     color: #64748b;
     background: rgba(255, 255, 255, 0.02);
+    opacity: 0.5;
   }
 
   .ub-slot.past {
@@ -2907,25 +2967,29 @@ body::before {
     color: #475569;
     background: rgba(255, 255, 255, 0.01);
     cursor: not-allowed;
-    opacity: 0.45;
+    opacity: 0.4;
   }
 
   .ub-past-warning {
     color: #f59e0b;
     font-size: 13px;
     text-align: center;
-    padding: 8px 12px;
-    background: rgba(245, 158, 11, 0.08);
-    border-radius: 10px;
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    margin-bottom: 8px;
+    padding: 10px 14px;
+    background: rgba(245, 158, 11, 0.12);
+    border-radius: 12px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    margin-bottom: 12px;
+    font-weight: 600;
   }
 
   .ub-slot.selected {
-    border-color: rgba(59, 130, 246, 0.7);
-    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    border-color: rgba(96, 165, 250, 0.8);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
     color: #ffffff;
-    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.45);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.5),
+      0 8px 24px rgba(59, 130, 246, 0.35);
+    transform: translateY(-2px);
   }
 
   .ub-slot-legend {
@@ -2939,44 +3003,55 @@ body::before {
   .ub-primary,
   .ub-secondary {
     width: 100%;
-    min-height: 48px;
+    min-height: 50px;
     border-radius: 14px;
     font-size: 16px;
     font-weight: 700;
-    transition: all .22s ease;
+    transition: all .25s cubic-bezier(0.23, 1, 0.320, 1);
   }
 
   .ub-primary {
     margin-top: auto;
     border: none;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
     color: #ffffff;
-    box-shadow: 0 16px 34px rgba(37, 99, 235, 0.42);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 12px 32px rgba(59, 130, 246, 0.4);
   }
 
   .ub-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 20px 38px rgba(37, 99, 235, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.5),
+      0 16px 42px rgba(59, 130, 246, 0.5);
   }
 
   .ub-secondary {
-    margin-top: 10px;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    background: rgba(255, 255, 255, 0.04);
-    color: #e2e8f0;
+    margin-top: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: #dbeafe;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
+    backdrop-filter: blur(8px);
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      0 4px 12px rgba(255, 255, 255, 0.06);
   }
 
   .ub-secondary:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(96, 165, 250, 0.6);
+    background: rgba(59, 130, 246, 0.15);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 8px 20px rgba(59, 130, 246, 0.2);
   }
 
   .ub-primary:disabled {
-    opacity: .7;
+    opacity: .65;
     cursor: not-allowed;
   }
 
@@ -3018,24 +3093,30 @@ body::before {
   .ub-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .ub-field span {
-    font-size: 13px;
-    color: #dbeafe;
+    font-size: 14px;
+    color: #e2e8f0;
     font-weight: 700;
+    letter-spacing: .02em;
   }
 
   .ub-field input {
-    height: 46px;
+    height: 48px;
     border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.26);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
     color: #f8fafc;
-    padding: 0 12px;
-    font-size: 14px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all .25s ease;
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.05);
   }
 
   .ub-field input::placeholder {
@@ -3043,8 +3124,11 @@ body::before {
   }
 
   .ub-field input:focus {
-    border-color: rgba(59, 130, 246, 0.52);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    border-color: rgba(96, 165, 250, 0.6);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.4),
+      0 0 0 3px rgba(96, 165, 250, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.08);
     outline: none;
   }
 
@@ -3058,62 +3142,75 @@ body::before {
   .ub-success-card {
     align-items: center;
     text-align: center;
-    min-height: calc(100vh - 110px);
+    min-height: calc(100vh - 120px);
     justify-content: center;
   }
 
   .ub-success-icon-wrap {
     position: relative;
-    margin-bottom: 4px;
+    margin-bottom: 20px;
   }
 
   .ub-success-icon {
-    width: 82px;
-    height: 82px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 36px;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
-    box-shadow: 0 18px 32px rgba(37, 99, 235, 0.45);
+    font-size: 42px;
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.5),
+      0 20px 40px rgba(59, 130, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    margin: 0 auto;
   }
 
   .ub-success-icon svg,
   .ub-success-badge svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   .ub-success-badge {
     position: absolute;
-    right: -4px;
-    bottom: -4px;
-    width: 26px;
-    height: 26px;
+    right: 50%;
+    transform: translateX(calc(50% + 30px));
+    top: -8px;
+    width: 32px;
+    height: 32px;
     border-radius: 999px;
-    background: #22c55e;
+    background: #10b981;
     color: #ffffff;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 900;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #061228;
+    border: 3px solid #0a0e1a;
+    box-shadow: 0 8px 18px rgba(16, 185, 129, 0.35);
   }
 
   .ub-success-summary {
     width: 100%;
-    padding: 12px;
+    padding: 16px 20px;
     display: grid;
-    gap: 8px;
+    gap: 10px;
     text-align: left;
-    margin: 8px 0 10px;
+    margin: 20px 0 16px;
     color: #cbd5e1;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.88), rgba(15, 18, 30, 0.92));
+    box-shadow: 
+      0 0 1px rgba(255, 255, 255, 0.15),
+      0 8px 20px rgba(255, 255, 255, 0.08);
   }
 
   .ub-success-row strong {
-    font-size: clamp(20px, 3.1vw, 32px);
-    line-height: .95;
+    font-size: clamp(22px, 3vw, 32px);
+    line-height: 1;
+    color: #ffffff;
   }
 
   .ub-success-row em {
@@ -3122,20 +3219,25 @@ body::before {
     font-size: 12px;
     font-weight: 700;
     color: #86efac;
-    background: rgba(34, 197, 94, 0.2);
+    background: rgba(16, 185, 129, 0.2);
     border-radius: 999px;
-    padding: 4px 10px;
+    padding: 5px 12px;
+    border: 1px solid rgba(16, 185, 129, 0.35);
   }
 
   .ub-share-note {
     width: 100%;
-    border-radius: 10px;
-    border: 1px solid rgba(59, 130, 246, 0.35);
-    background: rgba(59, 130, 246, 0.14);
+    border-radius: 12px;
+    border: 1px solid rgba(96, 165, 250, 0.5);
+    background: rgba(37, 99, 235, 0.15);
     color: #bfdbfe;
-    font-size: 12px;
-    padding: 9px 10px;
-    margin-bottom: 10px;
+    font-size: 13px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    box-shadow: 
+      0 0 1px rgba(96, 165, 250, 0.3),
+      0 4px 12px rgba(59, 130, 246, 0.15);
   }
 
   @media (max-width: 1024px) {
