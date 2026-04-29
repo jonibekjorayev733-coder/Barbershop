@@ -40,6 +40,8 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
   const [scope, setScope] = useState<SearchScope>("near");
   const [coords, setCoords] = useState(TASHKENT_COORDS);
   const [hasExactLocation, setHasExactLocation] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationMessage, setLocationMessage] = useState<string>("Joylashuv aniqlanmoqda...");
 
   const [shops, setShops] = useState<PublicBarbershopMapItemApi[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
@@ -48,6 +50,33 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+
+  const requestGeolocation = useCallback(
+    (options: PositionOptions) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Brauzer geolokatsiyani qo'llamaydi"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      }),
+    [],
+  );
+
+  const requestIpFallback = useCallback(async () => {
+    const response = await fetch("https://ipapi.co/json/");
+    if (!response.ok) {
+      throw new Error("IP lokatsiya xizmati javob bermadi");
+    }
+
+    const payload = (await response.json()) as { latitude?: number; longitude?: number };
+    if (typeof payload.latitude !== "number" || typeof payload.longitude !== "number") {
+      throw new Error("IP lokatsiyada koordinata topilmadi");
+    }
+
+    return { lat: payload.latitude, lng: payload.longitude };
+  }, []);
 
   const loadShops = useCallback(async () => {
     try {
@@ -74,12 +103,79 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
     }
   }, [coords.lat, coords.lng, scope, selectedShopId]);
 
-  const focusCurrentLocation = useCallback(() => {
-    setScope("near");
-    if (mapRef.current) {
-      mapRef.current.flyTo([coords.lat, coords.lng], 13, { duration: 0.7 });
+  const locateCurrentPosition = useCallback(async () => {
+    setIsLocating(true);
+
+    try {
+      const firstTry = await requestGeolocation({
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      });
+
+      const nextCoords = {
+        lat: firstTry.coords.latitude,
+        lng: firstTry.coords.longitude,
+      };
+
+      setCoords(nextCoords);
+      setHasExactLocation(true);
+      setLocationMessage("Aniq GPS joylashuv topildi");
+      setScope("near");
+
+      if (mapRef.current) {
+        mapRef.current.flyTo([nextCoords.lat, nextCoords.lng], 13, { duration: 0.8 });
+      }
+      return;
+    } catch {
+      try {
+        const secondTry = await requestGeolocation({
+          enableHighAccuracy: false,
+          timeout: 12000,
+          maximumAge: 60_000,
+        });
+
+        const nextCoords = {
+          lat: secondTry.coords.latitude,
+          lng: secondTry.coords.longitude,
+        };
+
+        setCoords(nextCoords);
+        setHasExactLocation(true);
+        setLocationMessage("Joylashuv topildi (o'rtacha aniqlik)");
+        setScope("near");
+
+        if (mapRef.current) {
+          mapRef.current.flyTo([nextCoords.lat, nextCoords.lng], 13, { duration: 0.8 });
+        }
+        return;
+      } catch {
+        try {
+          const ipCoords = await requestIpFallback();
+          setCoords(ipCoords);
+          setHasExactLocation(false);
+          setLocationMessage("GPS ishlamadi, IP bo'yicha taxminiy joylashuv qo'yildi");
+          setScope("near");
+
+          if (mapRef.current) {
+            mapRef.current.flyTo([ipCoords.lat, ipCoords.lng], 12, { duration: 0.8 });
+          }
+          return;
+        } catch {
+          setCoords(TASHKENT_COORDS);
+          setHasExactLocation(false);
+          setLocationMessage("Joylashuv olinmadi. Ruxsat bering va yana bosing.");
+          setScope("near");
+        }
+      }
+    } finally {
+      setIsLocating(false);
     }
-  }, [coords.lat, coords.lng]);
+  }, [requestGeolocation, requestIpFallback]);
+
+  const focusCurrentLocation = useCallback(() => {
+    void locateCurrentPosition();
+  }, [locateCurrentPosition]);
 
   const openShop = useCallback(
     async (shopId: number) => {
@@ -94,22 +190,8 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
   );
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      void loadShops();
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
-        setHasExactLocation(true);
-      },
-      () => {
-        setCoords(TASHKENT_COORDS);
-      },
-      { enableHighAccuracy: true, timeout: 7000 },
-    );
-  }, []);
+    void locateCurrentPosition();
+  }, [locateCurrentPosition]);
 
   useEffect(() => {
     void loadShops();
@@ -198,12 +280,12 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
               ))}
             </MapContainer>
 
-            <button type="button" className="public-locate-btn" onClick={focusCurrentLocation}>
-              📍 Joylashuvim
+            <button type="button" className="public-locate-btn" onClick={focusCurrentLocation} disabled={isLocating}>
+              {isLocating ? "Aniqlanmoqda..." : "📍 Joylashuvim"}
             </button>
 
             <div className="public-map-note">
-              {hasExactLocation ? "Joylashuv aniqlandi" : "Joylashuv olinmadi: Toshkent markazi qo‘yildi"}
+              {hasExactLocation ? `✅ ${locationMessage}` : `⚠️ ${locationMessage}`}
             </div>
           </section>
         </div>
