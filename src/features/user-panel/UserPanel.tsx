@@ -664,73 +664,66 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
               {/* Barber list */}
               {step === "barbers" ? (
                 <section className="ub-card ub-card-barbers">
-                  <div className="ub-layout-v3">
-                    <div className="ub-hero-card">
-                      <div className="ub-logo-row">
-                        <div className="ub-logo-icon"><FiScissors /></div>
-                        <div className="ub-brand">SARTAROSHXONA</div>
+                  <div className="ub-booking-grid">
+                    <div className="ub-barbers-list-wrap">
+                      <div className="ub-list-headline">
+                        <div>
+                          <div className="ub-section-title">Sartarosh tanlash</div>
+                          <p className="ub-list-sub">{locationLabel}. O'zingizga mos ustani tanlang.</p>
+                        </div>
+                        <div className="ub-hero-pills">
+                          <span><FiZap /> Tezkor</span>
+                          <span><FiShield /> Ishonchli</span>
+                          <span><FiClock /> Jonli</span>
+                        </div>
                       </div>
-                      <h2 className="ub-title ub-title-compact">Bugun uchun ideal ustani tanlang</h2>
-                      <p className="ub-list-sub">Har bir karta — masofa, tajriba, narx va manzil bo'yicha tayyor tanlov.</p>
-                      <p className="ub-list-sub" style={{ marginTop: 4 }}>{locationLabel}</p>
-                      <div className="ub-hero-pills">
-                        <span><FiZap /> Tezkor bron</span>
-                        <span><FiShield /> Ishonchli ustalar</span>
-                        <span><FiClock /> Jonli vaqtlar</span>
+
+                      <div className="ub-search-wrap">
+                        <input
+                          className="ub-search-input"
+                          value={searchTerm}
+                          onChange={(event) => setSearchTerm(event.target.value)}
+                          placeholder="Ism yoki xizmat bo'yicha qidiring..."
+                        />
+                      </div>
+
+                      <div className="ub-barber-list">
+                        {filteredBarbers.map((barber) => (
+                          <button key={barber.id} className={`ub-barber-row ${preferredBarberId === barber.id ? "preferred" : ""}`} onClick={() => void pickBarber(barber)}>
+                            {barber.photo_url ? (
+                              <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
+                            ) : (
+                              <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(barber.name)}</div>
+                            )}
+                            <div className="ub-barber-info">
+                              <strong>{barber.name}</strong>
+                              <span>{barber.work_directions || barber.specialty}</span>
+                              <span>{barber.barbershop_address || barber.barbershop_name || "Manzil ko'rsatilmagan"}</span>
+                              <small>
+                                <span className="ub-meta-item"><FiMapPin /> {formatDistance(barber.distance_km)}</span>
+                                <span className="ub-meta-sep">·</span>
+                                <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
+                                <span className="ub-meta-sep">·</span>
+                                <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil</span>
+                                <span className="ub-meta-sep">·</span>
+                                <span className="ub-meta-item"><FiScissors /> {formatPrice(barber.service_price)} ({formatDiscount(barber.discount_percent)})</span>
+                              </small>
+                            </div>
+                            <span className="ub-go"><FiArrowRight /></span>
+                          </button>
+                        ))}
+                        {!loading && filteredBarbers.length === 0 ? <div className="ub-empty">Mos sartarosh topilmadi.</div> : null}
                       </div>
                     </div>
 
-                    <aside className="ub-side-column">
-                      <div className="ub-side-card">
-                        <div className="ub-side-title">Qanday ishlaydi?</div>
-                        <div className="ub-side-steps">
-                          <div><span>1</span>Sartaroshni tanlang</div>
-                          <div><span>2</span>Bo'sh vaqtni belgilang</div>
-                          <div><span>3</span>Ma'lumotni tasdiqlang</div>
-                        </div>
+                    <aside className="ub-side-card ub-side-card-guide">
+                      <div className="ub-side-title">Qanday ishlaydi?</div>
+                      <div className="ub-side-steps">
+                        <div><span>1</span>Sartaroshni tanlang</div>
+                        <div><span>2</span>Bo'sh vaqtni belgilang</div>
+                        <div><span>3</span>Ma'lumotni tasdiqlang</div>
                       </div>
                     </aside>
-
-                    <div className="ub-list-block">
-                      <div className="ub-barbers-list-wrap">
-                        <div className="ub-section-title">SARALANGAN USTALAR</div>
-                        <div className="ub-search-wrap">
-                          <input
-                            className="ub-search-input"
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Sartarosh yoki xizmat bo'yicha qidiring..."
-                          />
-                        </div>
-                        <div className="ub-barber-list">
-                          {filteredBarbers.map((barber) => (
-                            <button key={barber.id} className={`ub-barber-row ${preferredBarberId === barber.id ? "preferred" : ""}`} onClick={() => void pickBarber(barber)}>
-                              {barber.photo_url ? (
-                                <img src={barber.photo_url} alt={barber.name} className="ub-barber-avatar" />
-                              ) : (
-                                <div className="ub-barber-avatar ub-barber-avatar-fallback">{getInitials(barber.name)}</div>
-                              )}
-                              <div className="ub-barber-info">
-                                <strong>{barber.name}</strong>
-                                <span>{barber.work_directions || barber.specialty}</span>
-                                <span>{barber.barbershop_address || barber.barbershop_name || "Manzil ko'rsatilmagan"}</span>
-                                <small>
-                                  <span className="ub-meta-item"><FiMapPin /> {formatDistance(barber.distance_km)}</span>
-                                  <span className="ub-meta-sep">·</span>
-                                  <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
-                                  <span className="ub-meta-sep">·</span>
-                                  <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil</span>
-                                  <span className="ub-meta-sep">·</span>
-                                  <span className="ub-meta-item"><FiScissors /> {formatPrice(barber.service_price)} ({formatDiscount(barber.discount_percent)})</span>
-                                </small>
-                              </div>
-                              <span className="ub-go"><FiArrowRight /></span>
-                            </button>
-                          ))}
-                          {!loading && filteredBarbers.length === 0 ? <div className="ub-empty">Mos sartarosh topilmadi.</div> : null}
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </section>
               ) : null}

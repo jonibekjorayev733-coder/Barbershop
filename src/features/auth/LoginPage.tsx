@@ -100,95 +100,57 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <div className="login-shell">
-      <div className="login-stage">
-        <section className="login-story-card">
-          <div className="login-brand">Sharp Cuts</div>
-          <div className="login-story-kicker">Premium grooming experience</div>
-          <h1 className="login-story-title">Birgina kirish sahifasidan zamonaviy salon taassuroti boshlansin.</h1>
-          <p className="login-story-copy">
-            Telefon bilan tez kirish yoki klassik login/register oqimi — ikkalasi ham tartibli, chiroyli va tushunarli ko'rinishda.
-          </p>
-
-          <div className="login-story-points">
-            <article>
-              <strong>Tezkor kirish</strong>
-              <span>Telefon raqam orqali bir necha soniyada tasdiqlang.</span>
-            </article>
-            <article>
-              <strong>Tartibli oqim</strong>
-              <span>Avval usulni tanlaysiz, keyin faqat kerakli inputlar chiqadi.</span>
-            </article>
-            <article>
-              <strong>Premium ko'rinish</strong>
-              <span>Qoramtir, oltin aksentli, salon imidjiga mos interfeys.</span>
-            </article>
+      <section className="login-card login-compact-card">
+        <div className="login-head-row">
+          <div>
+            <div className="login-brand">Sharp Cuts</div>
+            <h1>{authMethod === "phone" ? "Telefon bilan kirish" : mode === "login" ? "Hisobga kirish" : "Ro'yxatdan o'tish"}</h1>
+            <p>
+              {authMethod === "phone"
+                ? "Ism va telefon kiriting, SMS kodni tasdiqlab tizimga kiring."
+                : mode === "login"
+                  ? "Email va parol bilan xavfsiz kirish."
+                  : "Yangi foydalanuvchi uchun qisqa register formasi."}
+            </p>
           </div>
-        </section>
+        </div>
 
-        <section className="login-card login-card-premium">
-          <div className="login-head-row">
-            <div>
-              <div className="login-brand-sub">Kirish markazi</div>
-              <h1>{authMethod === "phone" ? "Telefon orqali kirish" : mode === "login" ? "Hisobga kirish" : "Ro'yxatdan o'tish"}</h1>
-              <p>
-                {authMethod === "phone"
-                  ? "Telefoningizni kiriting — ism va raqam asosida SMS kod yuboramiz, so'ng bir zumda panelga kirasiz."
-                  : mode === "login"
-                    ? "Admin, sartarosh va foydalanuvchilar uchun email/parol orqali xavfsiz kirish."
-                    : "Yangi foydalanuvchi uchun ro'yxatdan o'tish formasi. Birinchi kirishdayoq bron qilishga tayyor bo'lasiz."}
-              </p>
-            </div>
-          </div>
+        <div className="login-method-tabs login-method-tabs-3">
+          <button
+            type="button"
+            className={authMethod === "phone" ? "active" : ""}
+            onClick={() => {
+              setAuthMethod("phone");
+              setErrorMessage(null);
+            }}
+          >
+            Telefon bilan
+          </button>
+          <button
+            type="button"
+            className={authMethod === "account" && mode === "login" ? "active" : ""}
+            onClick={() => {
+              setAuthMethod("account");
+              setMode("login");
+              setErrorMessage(null);
+            }}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            className={authMethod === "account" && mode === "register" ? "active" : ""}
+            onClick={() => {
+              setAuthMethod("account");
+              setMode("register");
+              setErrorMessage(null);
+            }}
+          >
+            Register
+          </button>
+        </div>
 
-          <div className="login-method-tabs login-method-tabs-primary">
-            <button
-              type="button"
-              className={authMethod === "phone" ? "active" : ""}
-              onClick={() => {
-                setAuthMethod("phone");
-                setErrorMessage(null);
-              }}
-            >
-              Telefon bilan
-            </button>
-            <button
-              type="button"
-              className={authMethod === "account" ? "active" : ""}
-              onClick={() => {
-                setAuthMethod("account");
-                setErrorMessage(null);
-              }}
-            >
-              Login / Register
-            </button>
-          </div>
-
-          {authMethod === "account" ? (
-            <div className="login-mode-tabs login-mode-tabs-secondary">
-              <button
-                type="button"
-                className={mode === "login" ? "active" : ""}
-                onClick={() => {
-                  setMode("login");
-                  setErrorMessage(null);
-                }}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                className={mode === "register" ? "active" : ""}
-                onClick={() => {
-                  setMode("register");
-                  setErrorMessage(null);
-                }}
-              >
-                Register
-              </button>
-            </div>
-          ) : null}
-
-          <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleSubmit}>
             {authMethod === "phone" ? (
               <div className="login-field-cluster">
                 <label>
@@ -305,8 +267,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     : "Register va davom etish"}
             </button>
           </form>
-        </section>
-      </div>
+      </section>
     </div>
   );
 }

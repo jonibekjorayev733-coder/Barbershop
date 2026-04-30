@@ -413,6 +413,8 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
       <div className="bp-panel-grid">
         <aside className="bp-left-menu">
+          <button className={`bp-left-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>Boshqaruv</button>
+          <button className={`bp-left-btn ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}>Jadval</button>
           <button className={`bp-left-btn ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}>Profile</button>
           <button className={`bp-left-btn ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>Habarnomalar</button>
         </aside>
@@ -425,8 +427,6 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
               <div className="bp-date">{humanDate}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button className="bp-chip action" onClick={() => setView("dashboard")}>Boshqaruv</button>
-              <button className="bp-chip action" onClick={() => setView("schedule")}>Jadval</button>
               <button type="button" className="bp-av-btn" onClick={() => setView("profile")} aria-label="Profil">
                 {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-av-img" /> : <span className="bp-av-placeholder">{initials}</span>}
               </button>
