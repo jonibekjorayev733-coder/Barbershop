@@ -15,7 +15,6 @@ import {
 import { LoginPage } from "./features/auth/LoginPage";
 import { BarberPanel } from "./features/barber-panel/BarberPanel";
 import { UserPanel } from "./features/user-panel/UserPanel";
-import { PublicMapLandingPage } from "./features/public/PublicMapLandingPage";
 import { PublicLoginPage } from "./features/public/PublicLoginPage";
 import type { Page } from "./features/admin-panel/types";
 import { subscribeProfileSync } from "./lib/profileSync";
@@ -118,8 +117,7 @@ function toSession(response: LoginResponse): AppSession {
 export default function App() {
   const [page, setPage] = useState<Page>("dashboard");
   const [session, setSession] = useState<AppSession | null>(() => readStoredSession());
-  const [preAuthPage, setPreAuthPage] = useState<"landing" | "login">("landing");
-  const [preferredBarberId, setPreferredBarberId] = useState<number | null>(() => readPreferredBarberId());
+  const [preferredBarberId] = useState<number | null>(() => readPreferredBarberId());
 
   const isAdmin = session?.role === "admin";
   const isBarber = session?.role === "barber";
@@ -137,24 +135,12 @@ export default function App() {
     setSession(nextSession);
     persistSession(nextSession);
     setPage("dashboard");
-    setPreAuthPage("landing");
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
     setPage("dashboard");
-    setPreAuthPage("landing");
-  };
-
-  const handleStartLogin = () => {
-    setPreAuthPage("login");
-  };
-
-  const handleSelectPublicBarber = (barberId: number) => {
-    setPreferredBarberId(barberId);
-    sessionStorage.setItem(PREFERRED_BARBER_STORAGE_KEY, String(barberId));
-    setPreAuthPage("login");
   };
 
   useEffect(() => {
@@ -296,11 +282,7 @@ export default function App() {
   }, [session?.userId, session?.role]);
 
   if (!session) {
-    if (preAuthPage === "login") {
-      return <PublicLoginPage onLogin={handleLogin} onBack={() => setPreAuthPage("landing")} />;
-    }
-
-    return <PublicMapLandingPage onStartLogin={handleStartLogin} onSelectBarber={handleSelectPublicBarber} />;
+    return <PublicLoginPage onLogin={handleLogin} />;
   }
 
   if (isBarber) {

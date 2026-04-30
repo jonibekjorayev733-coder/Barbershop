@@ -2843,30 +2843,55 @@ def get_barber_appointments(
 
 
 @app.get("/user/barbers", response_model=List[schemas.UserBookingBarber])
-def get_user_booking_barbers(db: Session = Depends(get_db)):
+def get_user_booking_barbers(
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    max_distance_km: float = 12.0,
+    near_only: bool = True,
+    db: Session = Depends(get_db),
+):
+    seed_barbershops_if_empty(db)
     rows = db.query(models.Barber).order_by(models.Barber.name.asc()).all()
-    return [
-        {
-            "id": item.id,
-            "name": item.name,
-            "specialty": item.specialty,
-            "work_directions": item.work_directions,
-            "rating": item.rating,
-            "years_experience": item.years_experience,
-            "photo_url": item.photo_url,
-            "bio": item.bio,
-            "phone": item.phone,
-            "total_cuts": item.total_cuts,
-            "status": item.status,
-            "color": item.color,
-            "service_price": get_discounted_price(
-                get_barber_service_price(item, item.specialty),
-                item.discount_percent,
-            ),
-            "discount_percent": clamp_discount_percent(item.discount_percent),
-        }
-        for item in rows
-    ]
+    normalized_max_distance = max(0.5, min(float(max_distance_km or 12.0), 100.0))
+
+    payload = []
+    for item in rows:
+        shop = item.barbershop
+        distance_km = None
+        if lat is not None and lng is not None and shop is not None:
+            distance_km = round(haversine_distance_km(lat, lng, shop.latitude, shop.longitude), 2)
+
+        if lat is not None and lng is not None and near_only:
+            if distance_km is None or distance_km > normalized_max_distance:
+                continue
+
+        payload.append(
+            {
+                "id": item.id,
+                "name": item.name,
+                "specialty": item.specialty,
+                "work_directions": item.work_directions,
+                "rating": item.rating,
+                "years_experience": item.years_experience,
+                "photo_url": item.photo_url,
+                "bio": item.bio,
+                "phone": item.phone,
+                "total_cuts": item.total_cuts,
+                "status": item.status,
+                "color": item.color,
+                "service_price": get_discounted_price(
+                    get_barber_service_price(item, item.specialty),
+                    item.discount_percent,
+                ),
+                "discount_percent": clamp_discount_percent(item.discount_percent),
+                "distance_km": distance_km,
+                "barbershop_name": shop.name if shop is not None else None,
+                "barbershop_address": shop.address if shop is not None else None,
+            }
+        )
+
+    payload.sort(key=lambda entry: entry.get("distance_km") if entry.get("distance_km") is not None else 99999)
+    return payload
 
 
 @app.get("/public/barbershops", response_model=List[schemas.PublicBarbershopMapItem])

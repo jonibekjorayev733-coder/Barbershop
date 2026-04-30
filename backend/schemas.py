@@ -151,6 +151,9 @@ class UserBookingBarber(BaseModel):
     color: Optional[str] = None
     service_price: Optional[float] = 0
     discount_percent: Optional[float] = 0
+    distance_km: Optional[float] = None
+    barbershop_name: Optional[str] = None
+    barbershop_address: Optional[str] = None
 
 
 class PublicBarberPreview(BaseModel):

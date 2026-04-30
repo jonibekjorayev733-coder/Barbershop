@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FiArrowRight, FiCalendar, FiCheck, FiClock, FiScissors, FiShare2, FiShield, FiStar, FiZap } from "react-icons/fi";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FiArrowRight, FiCalendar, FiCheck, FiClock, FiMapPin, FiScissors, FiShare2, FiShield, FiStar, FiZap } from "react-icons/fi";
 import {
   createUserBooking,
   getBarberAvailability,
+  getPublicUserLocationByIp,
   getUserBookingBarbers,
   submitBarberRating,
   updateStudentProfile,
@@ -70,6 +71,13 @@ function formatDiscount(discount?: number | null): string {
   return value > 0 ? `${Math.round(value)}% skidka` : "Skidka yo'q";
 }
 
+function formatDistance(distanceKm?: number | null): string {
+  if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) {
+    return "Masofa aniqlanmagan";
+  }
+  return `${distanceKm.toFixed(1)} km`;
+}
+
 export function UserPanel({ userId, userName, userEmail = "", userAvatar, preferredBarberId = null, onProfileUpdated, onLogout }: UserPanelProps) {
   const [view, setView] = useState<UserView>("booking");
   const [step, setStep] = useState<UserBookingStep>("barbers");
@@ -88,6 +96,8 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const [ratingScore, setRatingScore] = useState(0);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingMessage, setRatingMessage] = useState<string | null>(null);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLabel, setLocationLabel] = useState<string>("Joylashuv aniqlanmoqda...");
 
   // Profile state
   const [profName, setProfName] = useState(userName);
@@ -97,6 +107,16 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const [isSaving, setIsSaving] = useState(false);
   const [profileToast, setProfileToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadBarbersByLocation = useCallback(async (coords: { lat: number; lng: number }) => {
+    const rows = await getUserBookingBarbers({
+      lat: coords.lat,
+      lng: coords.lng,
+      maxDistanceKm: 10,
+      nearOnly: true,
+    });
+    setBarbers(rows);
+  }, []);
 
   useEffect(() => {
     setProfName(userName);
@@ -207,7 +227,14 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
             barber.name.toLowerCase().includes(query) ||
             barber.specialty.toLowerCase().includes(query),
         );
-    return list.sort((a, b) => b.rating - a.rating);
+    return list.sort((a, b) => {
+      const aDist = typeof a.distance_km === "number" ? a.distance_km : 99999;
+      const bDist = typeof b.distance_km === "number" ? b.distance_km : 99999;
+      if (aDist !== bDist) {
+        return aDist - bDist;
+      }
+      return b.rating - a.rating;
+    });
   }, [barbers, searchTerm]);
 
   const averageRating = useMemo(() => {
@@ -235,7 +262,9 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
       if (payload.event === "barber.profile.updated" || payload.event === "barber.rating.updated") {
         void (async () => {
           try {
-            const rows = await getUserBookingBarbers();
+            const rows = userCoords
+              ? await getUserBookingBarbers({ lat: userCoords.lat, lng: userCoords.lng, maxDistanceKm: 10, nearOnly: true })
+              : await getUserBookingBarbers();
             setBarbers(rows);
           } catch {
             return;
@@ -259,21 +288,75 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
     });
 
     return unsubscribe;
-  }, [selectedBarber, selectedDate]);
+  }, [selectedBarber, selectedDate, userCoords]);
 
   useEffect(() => {
-    (async () => {
+    let watchId: number | null = null;
+    void (async () => {
       try {
         setLoading(true);
-        const rows = await getUserBookingBarbers();
-        setBarbers(rows);
+        const ipLocation = await getPublicUserLocationByIp();
+        const coordsFromIp = { lat: ipLocation.lat, lng: ipLocation.lng };
+        setUserCoords(coordsFromIp);
+        const cityRegion = [ipLocation.city, ipLocation.region].filter(Boolean).join(", ");
+        setLocationLabel(cityRegion ? `Yaqin hudud: ${cityRegion}` : "Yaqin hudud bo'yicha");
+        await loadBarbersByLocation(coordsFromIp);
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const exactCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+              setUserCoords(exactCoords);
+              setLocationLabel("Aniq joylashuv bo'yicha yaqin sartaroshlar");
+              await loadBarbersByLocation(exactCoords);
+            },
+            () => undefined,
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+          );
+
+          watchId = navigator.geolocation.watchPosition(
+            async (position) => {
+              const nextCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+              setUserCoords((current) => {
+                if (!current) {
+                  void loadBarbersByLocation(nextCoords);
+                  return nextCoords;
+                }
+
+                const movedDistance = Math.abs(nextCoords.lat - current.lat) + Math.abs(nextCoords.lng - current.lng);
+                if (movedDistance < 0.0025) {
+                  return current;
+                }
+
+                void loadBarbersByLocation(nextCoords);
+                return nextCoords;
+              });
+            },
+            () => undefined,
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 },
+          );
+        }
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Sartaroshlar yuklanmadi.");
+        try {
+          const rows = await getUserBookingBarbers({ nearOnly: false });
+          setBarbers(rows);
+          setLocationLabel("Joylashuv aniqlanmadi, umumiy ro'yxat ko'rsatildi");
+        } catch {
+          setErrorMessage(error instanceof Error ? error.message : "Sartaroshlar yuklanmadi.");
+        }
       } finally {
         setLoading(false);
       }
+
+      return undefined;
     })();
-  }, []);
+
+    return () => {
+      if (watchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [loadBarbersByLocation]);
 
   const pickBarber = async (barber: UserBookingBarberApi) => {
     setErrorMessage(null);
@@ -570,6 +653,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                       </div>
                       <h2 className="ub-title ub-title-compact">Sartaroshni tanlang</h2>
                       <p className="ub-list-sub">Ro'yxatdan usta tanlang, vaqt belgilang va bronni tez yakunlang.</p>
+                      <p className="ub-list-sub" style={{ marginTop: 4 }}>{locationLabel}</p>
                       <div className="ub-hero-pills">
                         <span><FiZap /> Tezkor bron</span>
                         <span><FiShield /> Ishonchli ustalar</span>
@@ -610,7 +694,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                               <div className="ub-barber-info">
                                 <strong>{barber.name}</strong>
                                 <span>{barber.work_directions || barber.specialty}</span>
+                                <span>{barber.barbershop_address || barber.barbershop_name || "Manzil ko'rsatilmagan"}</span>
                                 <small>
+                                  <span className="ub-meta-item"><FiMapPin /> {formatDistance(barber.distance_km)}</span>
+                                  <span className="ub-meta-sep">·</span>
                                   <span className="ub-meta-item"><FiStar /> {barber.rating}</span>
                                   <span className="ub-meta-sep">·</span>
                                   <span className="ub-meta-item"><FiClock /> {barber.years_experience}+ yil</span>

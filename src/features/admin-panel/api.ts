@@ -132,6 +132,9 @@ export interface UserBookingBarberApi {
   color?: string | null;
   service_price?: number;
   discount_percent?: number;
+  distance_km?: number | null;
+  barbershop_name?: string | null;
+  barbershop_address?: string | null;
 }
 
 export interface PublicBarberPreviewApi {
@@ -468,8 +471,28 @@ export async function sendBarberAppointmentSms(
   );
 }
 
-export async function getUserBookingBarbers(): Promise<UserBookingBarberApi[]> {
-  return requestJson<UserBookingBarberApi[]>("/user/barbers");
+export async function getUserBookingBarbers(options?: {
+  lat?: number;
+  lng?: number;
+  maxDistanceKm?: number;
+  nearOnly?: boolean;
+}): Promise<UserBookingBarberApi[]> {
+  const params = new URLSearchParams();
+  if (typeof options?.lat === "number") {
+    params.set("lat", String(options.lat));
+  }
+  if (typeof options?.lng === "number") {
+    params.set("lng", String(options.lng));
+  }
+  if (typeof options?.maxDistanceKm === "number") {
+    params.set("max_distance_km", String(options.maxDistanceKm));
+  }
+  if (typeof options?.nearOnly === "boolean") {
+    params.set("near_only", String(options.nearOnly));
+  }
+
+  const query = params.toString();
+  return requestJson<UserBookingBarberApi[]>(`/user/barbers${query ? `?${query}` : ""}`);
 }
 
 export async function getBarberAvailability(barberId: number, date: string): Promise<BarberAvailabilityApi> {
