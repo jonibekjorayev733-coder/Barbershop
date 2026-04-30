@@ -6,7 +6,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
-  const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
+  const [authMethod, setAuthMethod] = useState<"account" | "phone">("account");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -100,176 +100,212 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <div className="login-shell">
-      <div className="login-card">
-        <div className="login-brand">Sharp Cuts</div>
-        <h1>{mode === "login" ? "Hisobga kirish" : "Oddiy user ro'yxatdan o'tishi"}</h1>
-        <p>
-          {authMethod === "phone"
-            ? "Telefon raqam kiriting, SMS kodni tasdiqlang va tizimga kiring. Mavjud admin, sartarosh yoki user topilsa o'sha profilga kirasiz."
-            : mode === "login"
-              ? "Admin va sartarosh login qiladi. Oddiy user register bo'lganidan keyin login yoki auto kiradi."
-              : "Faqat oddiy user uchun register. Admin/sartarosh register qilmaydi."}
-        </p>
+      <div className="login-stage">
+        <section className="login-story-card">
+          <div className="login-brand">Sharp Cuts</div>
+          <div className="login-story-kicker">Premium grooming experience</div>
+          <h1 className="login-story-title">Birgina kirish sahifasidan zamonaviy salon taassuroti boshlansin.</h1>
+          <p className="login-story-copy">
+            Telefon bilan tez kirish yoki klassik login/register oqimi — ikkalasi ham tartibli, chiroyli va tushunarli ko'rinishda.
+          </p>
 
-        <div className="login-method-tabs">
-          <button
-            type="button"
-            className={authMethod === "email" ? "active" : ""}
-            onClick={() => {
-              setAuthMethod("email");
-              setErrorMessage(null);
-            }}
-          >
-            Email bilan
-          </button>
-          <button
-            type="button"
-            className={authMethod === "phone" ? "active" : ""}
-            onClick={() => {
-              setAuthMethod("phone");
-              setErrorMessage(null);
-            }}
-          >
-            Telefon bilan
-          </button>
-        </div>
+          <div className="login-story-points">
+            <article>
+              <strong>Tezkor kirish</strong>
+              <span>Telefon raqam orqali bir necha soniyada tasdiqlang.</span>
+            </article>
+            <article>
+              <strong>Tartibli oqim</strong>
+              <span>Avval usulni tanlaysiz, keyin faqat kerakli inputlar chiqadi.</span>
+            </article>
+            <article>
+              <strong>Premium ko'rinish</strong>
+              <span>Qoramtir, oltin aksentli, salon imidjiga mos interfeys.</span>
+            </article>
+          </div>
+        </section>
 
-        {authMethod === "email" ? (
-          <div className="login-mode-tabs">
+        <section className="login-card login-card-premium">
+          <div className="login-head-row">
+            <div>
+              <div className="login-brand-sub">Kirish markazi</div>
+              <h1>{authMethod === "phone" ? "Telefon orqali kirish" : mode === "login" ? "Hisobga kirish" : "Ro'yxatdan o'tish"}</h1>
+              <p>
+                {authMethod === "phone"
+                  ? "Telefoningizni kiriting — ism va raqam asosida SMS kod yuboramiz, so'ng bir zumda panelga kirasiz."
+                  : mode === "login"
+                    ? "Admin, sartarosh va foydalanuvchilar uchun email/parol orqali xavfsiz kirish."
+                    : "Yangi foydalanuvchi uchun ro'yxatdan o'tish formasi. Birinchi kirishdayoq bron qilishga tayyor bo'lasiz."}
+              </p>
+            </div>
+          </div>
+
+          <div className="login-method-tabs login-method-tabs-primary">
             <button
               type="button"
-              className={mode === "login" ? "active" : ""}
+              className={authMethod === "phone" ? "active" : ""}
               onClick={() => {
-                setMode("login");
+                setAuthMethod("phone");
                 setErrorMessage(null);
               }}
             >
-              Kirish
+              Telefon bilan
             </button>
             <button
               type="button"
-              className={mode === "register" ? "active" : ""}
+              className={authMethod === "account" ? "active" : ""}
               onClick={() => {
-                setMode("register");
+                setAuthMethod("account");
                 setErrorMessage(null);
               }}
             >
-              Register (User)
+              Login / Register
             </button>
           </div>
-        ) : null}
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          {authMethod === "phone" ? (
-            <>
-              <label>
-                <span>Ism</span>
-                <input
-                  type="text"
-                  value={phoneName}
-                  onChange={(event) => setPhoneName(event.target.value)}
-                  placeholder="Ismingiz (yangi user uchun)"
-                  autoComplete="name"
-                />
-              </label>
-
-              <label>
-                <span>Telefon</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="998901234567"
-                  autoComplete="tel"
-                />
-              </label>
-
-              <button type="button" className="login-secondary-btn" onClick={() => void handleSendSmsCode()} disabled={isLoading}>
-                {isLoading ? "Yuborilmoqda..." : "SMS kod yuborish"}
+          {authMethod === "account" ? (
+            <div className="login-mode-tabs login-mode-tabs-secondary">
+              <button
+                type="button"
+                className={mode === "login" ? "active" : ""}
+                onClick={() => {
+                  setMode("login");
+                  setErrorMessage(null);
+                }}
+              >
+                Login
               </button>
-
-              <label>
-                <span>SMS kod</span>
-                <input
-                  type="text"
-                  value={smsCode}
-                  onChange={(event) => setSmsCode(event.target.value)}
-                  placeholder="6 xonali kod"
-                  autoComplete="one-time-code"
-                />
-              </label>
-            </>
-          ) : mode === "register" ? (
-            <label>
-              <span>Ism</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Ismingiz"
-                autoComplete="name"
-              />
-            </label>
-          ) : null}
-
-          <label>
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="username"
-            />
-          </label>
-
-          <label>
-            <span>Parol</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Parolingiz"
-              autoComplete="current-password"
-            />
-          </label>
-
-          {mode === "register" ? (
-            <label>
-              <span>Parolni tasdiqlang</span>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="Parolni qayta kiriting"
-                autoComplete="new-password"
-              />
-            </label>
-          ) : null}
-
-          {errorMessage ? <div className="login-error">{errorMessage}</div> : null}
-          {otpHint && authMethod === "phone" ? <div className="login-hint">{otpHint}</div> : null}
-
-          {mode === "register" && authMethod === "email" ? (
-            <div className="login-hint">
-              Parol: kamida 8 belgi, 1 katta, 1 kichik, 1 raqam va 1 maxsus belgi.
+              <button
+                type="button"
+                className={mode === "register" ? "active" : ""}
+                onClick={() => {
+                  setMode("register");
+                  setErrorMessage(null);
+                }}
+              >
+                Register
+              </button>
             </div>
           ) : null}
 
-          <button type="submit" className="login-btn" disabled={isLoading}>
-            {isLoading
-              ? authMethod === "phone"
-                ? "Tasdiqlanmoqda..."
-                : mode === "login"
-                  ? "Kirilmoqda..."
-                  : "Ro'yxatdan o'tilmoqda..."
-              : authMethod === "phone"
-                ? "SMS kod bilan kirish"
-                : mode === "login"
-                  ? "Kirish"
-                  : "Register va kirish"}
-          </button>
-        </form>
+          <form className="login-form" onSubmit={handleSubmit}>
+            {authMethod === "phone" ? (
+              <div className="login-field-cluster">
+                <label>
+                  <span>Ism</span>
+                  <input
+                    type="text"
+                    value={phoneName}
+                    onChange={(event) => setPhoneName(event.target.value)}
+                    placeholder="Masalan: Jamshid"
+                    autoComplete="name"
+                  />
+                </label>
+
+                <label>
+                  <span>Telefon raqam</span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="998901234567"
+                    autoComplete="tel"
+                  />
+                </label>
+
+                <button type="button" className="login-secondary-btn" onClick={() => void handleSendSmsCode()} disabled={isLoading}>
+                  {isLoading ? "Yuborilmoqda..." : "SMS kod yuborish"}
+                </button>
+
+                {(otpHint || smsCode) ? (
+                  <label>
+                    <span>SMS kod</span>
+                    <input
+                      type="text"
+                      value={smsCode}
+                      onChange={(event) => setSmsCode(event.target.value)}
+                      placeholder="6 xonali kod"
+                      autoComplete="one-time-code"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            ) : (
+              <div className="login-field-cluster">
+                {mode === "register" ? (
+                  <label>
+                    <span>Ism</span>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="To'liq ismingiz"
+                      autoComplete="name"
+                    />
+                  </label>
+                ) : null}
+
+                <label>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="username"
+                  />
+                </label>
+
+                <label>
+                  <span>Parol</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Parolingiz"
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  />
+                </label>
+
+                {mode === "register" ? (
+                  <label>
+                    <span>Parolni tasdiqlang</span>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      placeholder="Parolni qayta kiriting"
+                      autoComplete="new-password"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            )}
+
+            {errorMessage ? <div className="login-error">{errorMessage}</div> : null}
+            {otpHint && authMethod === "phone" ? <div className="login-hint">{otpHint}</div> : null}
+
+            {mode === "register" && authMethod === "account" ? (
+              <div className="login-hint">
+                Parol kuchli bo'lsin: kamida 8 belgi, katta harf, kichik harf, raqam va maxsus belgi.
+              </div>
+            ) : null}
+
+            <button type="submit" className="login-btn" disabled={isLoading}>
+              {isLoading
+                ? authMethod === "phone"
+                  ? "Tasdiqlanmoqda..."
+                  : mode === "login"
+                    ? "Kirilmoqda..."
+                    : "Ro'yxatdan o'tilmoqda..."
+                : authMethod === "phone"
+                  ? "SMS kod bilan kirish"
+                  : mode === "login"
+                    ? "Login"
+                    : "Register va davom etish"}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   );

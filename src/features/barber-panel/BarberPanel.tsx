@@ -14,6 +14,7 @@ import {
   type BarberNotificationApi,
 } from "../admin-panel/api";
 import { fileToOptimizedAvatarDataUrl } from "../../lib/avatar";
+import { LocationPickerMap } from "../../components/shared/LocationPickerMap";
 import { emitProfileSync } from "../../lib/profileSync";
 import { subscribeRealtimeChannel } from "../../lib/realtime";
 import { formatDateTimeInTashkent, formatNowInTashkent, getTashkentTodayISO } from "../../lib/time";
@@ -43,6 +44,29 @@ interface BarberNotificationRealtimePayload {
   type?: string;
   read?: boolean;
   created_at?: string;
+}
+
+interface PickedCoords {
+  lat: number;
+  lng: number;
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`,
+    {
+      headers: {
+        "Accept-Language": "uz,en",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Manzilni aniqlab bo'lmadi");
+  }
+
+  const payload = (await response.json()) as { display_name?: string };
+  return payload.display_name?.trim() || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
 export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvatar, onProfileUpdated, onLogout }: BarberPanelProps) {
@@ -110,6 +134,17 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     }
     return "";
   }, [profLocationAddress, profLocationLat, profLocationLng]);
+
+  const pickedCoords = useMemo<PickedCoords | null>(() => {
+    const lat = Number.parseFloat(profLocationLat);
+    const lng = Number.parseFloat(profLocationLng);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+
+    return null;
+  }, [profLocationLat, profLocationLng]);
 
   const loadDashboard = async () => {
     const data = await getBarberDashboard(barberId);
@@ -207,6 +242,44 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         showProfileToast("error", error instanceof Error ? error.message : "Rasm tayyorlanmadi.");
       }
     })();
+  };
+
+  const applyPickedLocation = async (coords: PickedCoords) => {
+    setProfLocationLat(String(coords.lat));
+    setProfLocationLng(String(coords.lng));
+
+    try {
+      const address = await reverseGeocode(coords.lat, coords.lng);
+      setProfLocationAddress(address);
+    } catch {
+      setProfLocationAddress(`${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`);
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showProfileToast("error", "Brauzer joylashuvni qo'llab-quvvatlamaydi.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void applyPickedLocation({
+          lat: Number(position.coords.latitude.toFixed(6)),
+          lng: Number(position.coords.longitude.toFixed(6)),
+        });
+      },
+      () => {
+        showProfileToast("error", "Joylashuvni olib bo'lmadi.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  };
+
+  const clearPickedLocation = () => {
+    setProfLocationAddress("");
+    setProfLocationLat("");
+    setProfLocationLng("");
   };
 
   const handleProfileSave = async () => {
@@ -347,7 +420,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         <div className="bp-main-panel">
           <header className="bp-head">
             <div>
-              <div className="bp-greet">Assalomu alaykum,</div>
+              <div className="bp-greet">Bugungi smena nazorati</div>
               <h2>{dashboard?.barber_name || barberName}</h2>
               <div className="bp-date">{humanDate}</div>
             </div>
@@ -364,6 +437,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
           {view === "profile" ? (
             <section className="bp-wrap bp-profile-page">
               <h3>Mening profilim</h3>
+              <p className="bp-profile-sub">Profil, xizmat narxi va salon joylashuvini bir joydan boshqaring.</p>
 
               <div className="prof-avatar-section">
                 <div className="prof-avatar-wrap">
@@ -397,33 +471,45 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 <label className="barber-field"><span>Skidka (%)</span>
                   <input value={profDiscountPercent} onChange={(event) => setProfDiscountPercent(event.target.value)} placeholder="Masalan: 15" />
                 </label>
-                <label className="barber-field"><span>Manzil</span>
-                  <input value={profLocationAddress} onChange={(event) => setProfLocationAddress(event.target.value)} placeholder="Masalan: Buxoro, Mustaqillik ko'chasi 12" />
-                </label>
-                <div className="barber-form-row">
-                  <label className="barber-field"><span>Latitude</span>
-                    <input value={profLocationLat} onChange={(event) => setProfLocationLat(event.target.value)} placeholder="39.7678" />
-                  </label>
-                  <label className="barber-field"><span>Longitude</span>
-                    <input value={profLocationLng} onChange={(event) => setProfLocationLng(event.target.value)} placeholder="64.4554" />
-                  </label>
-                </div>
-                <div className="bp-map-preview-card">
-                  <div className="bp-list-head">
-                    <h4>Joylashuv preview</h4>
-                    <small>Qo'lda manzil yoki koordinata kiriting</small>
+                <div className="bp-location-picker-card">
+                  <div className="bp-location-picker-head">
+                    <div>
+                      <span className="bp-section-kicker">Map picker</span>
+                      <h4>Joylashuvni xaritada belgilang</h4>
+                      <small>Nuqtani bosganingizda manzil avtomatik olinadi.</small>
+                    </div>
+                    <div className="bp-location-actions">
+                      <button type="button" className="ba-sec" onClick={handleUseCurrentLocation}>Mening joyim</button>
+                      <button type="button" className="ba-sec" onClick={clearPickedLocation}>Tozalash</button>
+                    </div>
                   </div>
+
+                  <div className="bp-location-summary-card">
+                    <strong>{profLocationAddress || "Hali joy tanlanmagan"}</strong>
+                    <small>
+                      {pickedCoords
+                        ? `${pickedCoords.lat.toFixed(6)}, ${pickedCoords.lng.toFixed(6)}`
+                        : "Xaritadagi kerakli nuqtani bosing yoki `Mening joyim` tugmasidan foydalaning."}
+                    </small>
+                  </div>
+
+                  <LocationPickerMap value={pickedCoords} onChange={(coords) => void applyPickedLocation(coords)} className="bp-location-picker-map" />
+
                   {mapPreviewUrl ? (
-                    <iframe
-                      title="Barber location preview"
-                      src={mapPreviewUrl}
-                      className="bp-map-preview"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  ) : (
-                    <div className="bp-empty">Manzil yoki koordinata kiritsangiz xarita shu yerda chiqadi.</div>
-                  )}
+                    <div className="bp-map-preview-card">
+                      <div className="bp-list-head">
+                        <h4>Google preview</h4>
+                        <small>Foydalanuvchi ko'radigan yo'nalish manzili</small>
+                      </div>
+                      <iframe
+                        title="Barber location preview"
+                        src={mapPreviewUrl}
+                        className="bp-map-preview"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+                  ) : null}
                 </div>
                 <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
                   <input type="password" value={profPassword} onChange={(event) => setProfPassword(event.target.value)} placeholder="Yangi parol" autoComplete="new-password" />

@@ -547,9 +547,9 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
           {/* Header */}
           <header className="ub-page-head">
             <div>
-              <div className="ub-page-eyebrow">Foydalanuvchi paneli</div>
+              <div className="ub-page-eyebrow">Private booking lounge</div>
               <h1 className="ub-page-title">Xush kelibsiz, {userName || "Mehmon"}</h1>
-              <p className="ub-page-sub">Qulay bron qilish, tezkor tanlov va real vaqtdagi bo'sh vaqtlar.</p>
+              <p className="ub-page-sub">Eng yaqin ustani toping, yo'nalishni oching va bronni zamonaviy oqimda bir necha qadamda yakunlang.</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button type="button" className="ub-av-btn" onClick={() => setView("profile")} aria-label="Profil">
@@ -670,8 +670,8 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                         <div className="ub-logo-icon"><FiScissors /></div>
                         <div className="ub-brand">SARTAROSHXONA</div>
                       </div>
-                      <h2 className="ub-title ub-title-compact">Sartaroshni tanlang</h2>
-                      <p className="ub-list-sub">Ro'yxatdan usta tanlang, vaqt belgilang va bronni tez yakunlang.</p>
+                      <h2 className="ub-title ub-title-compact">Bugun uchun ideal ustani tanlang</h2>
+                      <p className="ub-list-sub">Har bir karta — masofa, tajriba, narx va manzil bo'yicha tayyor tanlov.</p>
                       <p className="ub-list-sub" style={{ marginTop: 4 }}>{locationLabel}</p>
                       <div className="ub-hero-pills">
                         <span><FiZap /> Tezkor bron</span>
@@ -693,7 +693,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
 
                     <div className="ub-list-block">
                       <div className="ub-barbers-list-wrap">
-                        <div className="ub-section-title">SARTAROSHLAR RO'YXATI</div>
+                        <div className="ub-section-title">SARALANGAN USTALAR</div>
                         <div className="ub-search-wrap">
                           <input
                             className="ub-search-input"
@@ -901,8 +901,8 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                     <div className="ub-success-icon"><FiCheck /></div>
                     <span className="ub-success-badge"><FiCheck /></span>
                   </div>
-                  <h3>Barchasi tayyor!</h3>
-                  <p>Broningiz qabul qilindi, tez orada siz bilan bog'lanamiz.</p>
+                  <h3>Bron muvaffaqiyatli yaratildi</h3>
+                  <p>Buyurtmangiz tizimga tushdi — endi siz uchun yo'nalish, vaqt va barber ma'lumoti tayyor.</p>
                   <div className="ub-success-summary">
                     <div className="ub-success-row">
                       <span>BRON RAQAMI</span>
