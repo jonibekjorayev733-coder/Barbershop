@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { divIcon, type Map as LeafletMap } from "leaflet";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import { useCallback, useEffect, useState } from "react";
 import {
   getPublicBarbershopDetail,
   getPublicBarbershops,
+  getPublicUserLocationByIp,
   type PublicBarbershopDetailApi,
   type PublicBarbershopMapItemApi,
 } from "../admin-panel/api";
@@ -17,24 +15,6 @@ interface PublicMapLandingPageProps {
 
 type SearchScope = "near" | "far";
 const TASHKENT_COORDS = { lat: 41.311081, lng: 69.240562 };
-
-function createShopMarkerIcon(active: boolean) {
-  return divIcon({
-    className: "",
-    html: `<div class="public-shop-marker ${active ? "active" : ""}">✂</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-  });
-}
-
-function createUserMarkerIcon() {
-  return divIcon({
-    className: "",
-    html: '<div class="public-user-marker">📍</div>',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  });
-}
 
 export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMapLandingPageProps) {
   const [scope, setScope] = useState<SearchScope>("near");
@@ -49,7 +29,6 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
 
   const requestGeolocation = useCallback(
     (options: PositionOptions) =>
@@ -65,17 +44,12 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
   );
 
   const requestIpFallback = useCallback(async () => {
-    const response = await fetch("https://ipapi.co/json/");
-    if (!response.ok) {
-      throw new Error("IP lokatsiya xizmati javob bermadi");
-    }
-
-    const payload = (await response.json()) as { latitude?: number; longitude?: number };
-    if (typeof payload.latitude !== "number" || typeof payload.longitude !== "number") {
+    const payload = await getPublicUserLocationByIp();
+    if (typeof payload.lat !== "number" || typeof payload.lng !== "number") {
       throw new Error("IP lokatsiyada koordinata topilmadi");
     }
 
-    return { lat: payload.latitude, lng: payload.longitude };
+    return payload;
   }, []);
 
   const loadShops = useCallback(async () => {
@@ -122,10 +96,6 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
       setHasExactLocation(true);
       setLocationMessage("Aniq GPS joylashuv topildi");
       setScope("near");
-
-      if (mapRef.current) {
-        mapRef.current.flyTo([nextCoords.lat, nextCoords.lng], 13, { duration: 0.8 });
-      }
       return;
     } catch {
       try {
@@ -144,22 +114,20 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
         setHasExactLocation(true);
         setLocationMessage("Joylashuv topildi (o'rtacha aniqlik)");
         setScope("near");
-
-        if (mapRef.current) {
-          mapRef.current.flyTo([nextCoords.lat, nextCoords.lng], 13, { duration: 0.8 });
-        }
         return;
       } catch {
         try {
           const ipCoords = await requestIpFallback();
-          setCoords(ipCoords);
+          setCoords({ lat: ipCoords.lat, lng: ipCoords.lng });
           setHasExactLocation(false);
-          setLocationMessage("GPS ishlamadi, IP bo'yicha taxminiy joylashuv qo'yildi");
+          const cityRegion = [ipCoords.city, ipCoords.region].filter(Boolean).join(", ");
+          const sourceLabel = ipCoords.source ? ` (${ipCoords.source})` : "";
+          setLocationMessage(
+            cityRegion
+              ? `GPS ishlamadi, IP bo'yicha joylashuv qo'yildi: ${cityRegion}${sourceLabel}`
+              : `GPS ishlamadi, IP bo'yicha taxminiy joylashuv qo'yildi${sourceLabel}`,
+          );
           setScope("near");
-
-          if (mapRef.current) {
-            mapRef.current.flyTo([ipCoords.lat, ipCoords.lng], 12, { duration: 0.8 });
-          }
           return;
         } catch {
           setCoords(TASHKENT_COORDS);
@@ -182,9 +150,6 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
       setSelectedShopId(shopId);
       const detail = await getPublicBarbershopDetail(shopId, { lat: coords.lat, lng: coords.lng });
       setSelectedShop(detail);
-      if (mapRef.current) {
-        mapRef.current.flyTo([detail.latitude, detail.longitude], 14, { duration: 0.7 });
-      }
     },
     [coords.lat, coords.lng],
   );
@@ -204,11 +169,6 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
 
     return unsubscribe;
   }, [loadShops]);
-
-  const mapCenter = useMemo<[number, number]>(
-    () => (selectedShop ? [selectedShop.latitude, selectedShop.longitude] : [coords.lat, coords.lng]),
-    [selectedShop, coords.lat, coords.lng],
-  );
 
   return (
     <div className="public-shell public-shell-v2">
@@ -231,7 +191,15 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
         <div className="public-main-grid">
           <aside className="public-left-panel">
             <div className="public-left-title">{selectedShop?.name || "Sartaroshxona tanlang"}</div>
-            <div className="public-left-sub">{selectedShop?.address || "Marker bosib salonni tanlang"}</div>
+            <div className="public-left-sub">{selectedShop?.address || "Pastdagi ro'yxatdan salonni tanlang"}</div>
+
+            <div className="public-map-note" style={{ marginBottom: 12 }}>
+              {hasExactLocation ? `✅ ${locationMessage}` : `⚠️ ${locationMessage}`}
+            </div>
+
+            <button type="button" className="public-locate-btn" onClick={focusCurrentLocation} disabled={isLocating}>
+              {isLocating ? "Aniqlanmoqda..." : "📍 Mening joyim"}
+            </button>
 
             {selectedShop?.barbers?.length ? (
               <div className="public-barber-list">
@@ -257,35 +225,33 @@ export function PublicMapLandingPage({ onStartLogin, onSelectBarber }: PublicMap
           </aside>
 
           <section className="public-map-card public-map-card-v2">
-            <MapContainer
-              ref={mapRef}
-              center={mapCenter}
-              zoom={12}
-              className="public-map public-map-v2"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+            <div className="public-empty" style={{ minHeight: 220, display: "grid", placeItems: "center", textAlign: "center" }}>
+              <div>
+                <strong>Xarita olib tashlandi</strong>
+                <div style={{ marginTop: 8 }}>
+                  Tizim sizning joylashuvingiz bo‘yicha sartaroshxonalarni avtomatik hisoblaydi.
+                </div>
+              </div>
+            </div>
 
-              <Marker position={[coords.lat, coords.lng]} icon={createUserMarkerIcon()} />
-
+            <div className="public-barber-list">
               {shops.map((shop) => (
-                <Marker
+                <button
                   key={shop.id}
-                  position={[shop.latitude, shop.longitude]}
-                  icon={createShopMarkerIcon(shop.id === selectedShopId)}
-                  eventHandlers={{ click: () => void openShop(shop.id) }}
-                />
+                  type="button"
+                  className={`public-shop-strip-item ${selectedShopId === shop.id ? "active" : ""}`}
+                  onClick={() => void openShop(shop.id)}
+                >
+                  <img
+                    src={shop.photo_url || "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80"}
+                    alt={shop.name}
+                  />
+                  <div>
+                    <strong>{shop.name}</strong>
+                    <small>{shop.distance_km ?? "-"} km · {shop.barber_count} usta</small>
+                  </div>
+                </button>
               ))}
-            </MapContainer>
-
-            <button type="button" className="public-locate-btn" onClick={focusCurrentLocation} disabled={isLocating}>
-              {isLocating ? "Aniqlanmoqda..." : "📍 Joylashuvim"}
-            </button>
-
-            <div className="public-map-note">
-              {hasExactLocation ? `✅ ${locationMessage}` : `⚠️ ${locationMessage}`}
             </div>
           </section>
         </div>

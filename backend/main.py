@@ -529,41 +529,136 @@ def serialize_public_barbershop(shop: models.Barbershop, user_lat: Optional[floa
     }
 
 
-def seed_barbershops_if_empty(db: Session) -> None:
-    existing = db.query(models.Barbershop).count()
-    if existing > 0:
-        return
+def parse_client_ip(request: Request) -> Optional[str]:
+    forwarded_for = request.headers.get("x-forwarded-for", "").strip()
+    if forwarded_for:
+        first = forwarded_for.split(",", 1)[0].strip()
+        if first:
+            return first
 
-    seeds = [
-        models.Barbershop(
-            name="Chilonzor Premium Cuts",
-            address="Chilonzor, Toshkent",
-            latitude=41.2752,
-            longitude=69.2036,
-            photo_url="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80",
-            description="Zamonaviy uslub, premium xizmat va toza muhit.",
-        ),
-        models.Barbershop(
-            name="Yunusobod Gentlemen Club",
-            address="Yunusobod, Toshkent",
-            latitude=41.3631,
-            longitude=69.2882,
-            photo_url="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80",
-            description="Klassik va modern kesimlar, tajribali ustalar.",
-        ),
-        models.Barbershop(
-            name="Sergeli Urban Barber",
-            address="Sergeli, Toshkent",
-            latitude=41.2266,
-            longitude=69.2197,
-            photo_url="https://images.unsplash.com/photo-1622287162716-f311baa1a2b8?auto=format&fit=crop&w=1200&q=80",
-            description="Tezkor bron va qulay narxlar bilan xizmat.",
-        ),
+    real_ip = request.headers.get("x-real-ip", "").strip()
+    if real_ip:
+        return real_ip
+
+    if request.client and request.client.host:
+        return request.client.host
+
+    return None
+
+
+def _http_get_json(url: str, timeout: int = 6) -> dict:
+    req = urllib.request.Request(url, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        if not (200 <= response.status < 300):
+            raise ValueError(f"HTTP {response.status}")
+        return json.loads(response.read().decode("utf-8"))
+
+
+def resolve_location_by_ip(ip_address: Optional[str]) -> Optional[dict]:
+    safe_ip = (ip_address or "").strip()
+    query_target = urllib.parse.quote(safe_ip) if safe_ip else ""
+    providers = [
+        (f"https://ipapi.co/{query_target}/json/" if query_target else "https://ipapi.co/json/", "ipapi"),
+        (f"http://ip-api.com/json/{query_target}" if query_target else "http://ip-api.com/json/", "ip-api"),
     ]
 
-    for row in seeds:
-        db.add(row)
-    db.commit()
+    for url, provider in providers:
+        try:
+            payload = _http_get_json(url, timeout=7)
+
+            if provider == "ipapi":
+                lat = payload.get("latitude")
+                lng = payload.get("longitude")
+                city = payload.get("city")
+                region = payload.get("region") or payload.get("region_code")
+                country = payload.get("country_name") or payload.get("country")
+                timezone_value = payload.get("timezone")
+            else:
+                if str(payload.get("status", "")).lower() != "success":
+                    continue
+                lat = payload.get("lat")
+                lng = payload.get("lon")
+                city = payload.get("city")
+                region = payload.get("regionName") or payload.get("region")
+                country = payload.get("country")
+                timezone_value = payload.get("timezone")
+
+            if isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+                return {
+                    "lat": float(lat),
+                    "lng": float(lng),
+                    "city": str(city or "").strip() or None,
+                    "region": str(region or "").strip() or None,
+                    "country": str(country or "").strip() or None,
+                    "timezone": str(timezone_value or "").strip() or None,
+                    "source": provider,
+                }
+        except Exception:
+            continue
+
+    return None
+
+
+def seed_barbershops_if_empty(db: Session) -> None:
+    seed_payloads = [
+        {
+            "name": "Chilonzor Premium Cuts",
+            "address": "Chilonzor, Toshkent",
+            "latitude": 41.2752,
+            "longitude": 69.2036,
+            "photo_url": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80",
+            "description": "Zamonaviy uslub, premium xizmat va toza muhit.",
+        },
+        {
+            "name": "Yunusobod Gentlemen Club",
+            "address": "Yunusobod, Toshkent",
+            "latitude": 41.3631,
+            "longitude": 69.2882,
+            "photo_url": "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80",
+            "description": "Klassik va modern kesimlar, tajribali ustalar.",
+        },
+        {
+            "name": "Sergeli Urban Barber",
+            "address": "Sergeli, Toshkent",
+            "latitude": 41.2266,
+            "longitude": 69.2197,
+            "photo_url": "https://images.unsplash.com/photo-1622287162716-f311baa1a2b8?auto=format&fit=crop&w=1200&q=80",
+            "description": "Tezkor bron va qulay narxlar bilan xizmat.",
+        },
+        {
+            "name": "Buxoro Old City Barber",
+            "address": "Eski shahar, Buxoro",
+            "latitude": 39.7747,
+            "longitude": 64.4286,
+            "photo_url": "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80",
+            "description": "Buxoro markazida klassik va zamonaviy uslubdagi xizmatlar.",
+        },
+        {
+            "name": "Buxoro City Fade Studio",
+            "address": "Buxoro shahri, Mustaqillik ko'chasi",
+            "latitude": 39.7678,
+            "longitude": 64.4554,
+            "photo_url": "https://images.unsplash.com/photo-1503951458645-643d53c5d7c4?auto=format&fit=crop&w=1200&q=80",
+            "description": "Fade, beard styling va premium servislar.",
+        },
+    ]
+
+    existing_names = {
+        (str(item.name or "").strip().lower())
+        for item in db.query(models.Barbershop).all()
+    }
+
+    created_any = False
+    for payload in seed_payloads:
+        normalized_name = str(payload["name"]).strip().lower()
+        if normalized_name in existing_names:
+            continue
+        db.add(models.Barbershop(**payload))
+        existing_names.add(normalized_name)
+        created_any = True
+
+    if created_any:
+        db.commit()
 
     db_barbers = db.query(models.Barber).order_by(models.Barber.id.asc()).all()
     shops = db.query(models.Barbershop).order_by(models.Barbershop.id.asc()).all()
@@ -575,6 +670,26 @@ def seed_barbershops_if_empty(db: Session) -> None:
             barber.barbershop_id = shops[index % len(shops)].id
 
     db.commit()
+
+
+@app.get("/public/location-by-ip", response_model=schemas.PublicUserLocation)
+def get_public_location_by_ip(request: Request):
+    client_ip = parse_client_ip(request)
+    location = resolve_location_by_ip(client_ip)
+
+    if not location:
+        raise HTTPException(status_code=503, detail="IP bo'yicha joylashuv aniqlanmadi")
+
+    return {
+        "lat": location["lat"],
+        "lng": location["lng"],
+        "city": location.get("city"),
+        "region": location.get("region"),
+        "country": location.get("country"),
+        "timezone": location.get("timezone"),
+        "source": location.get("source") or "unknown",
+        "is_exact": False,
+    }
 
 
 def notification_to_payload(notification: models.Notification) -> dict:

@@ -192,6 +192,17 @@ class BarbershopAssignBarberRequest(BaseModel):
     barber_id: int
 
 
+class PublicUserLocation(BaseModel):
+    lat: float
+    lng: float
+    city: Optional[str] = None
+    region: Optional[str] = None
+    country: Optional[str] = None
+    timezone: Optional[str] = None
+    source: str = "unknown"
+    is_exact: bool = False
+
+
 class TimeSlotAvailability(BaseModel):
     time: str
     status: str  # available | booked

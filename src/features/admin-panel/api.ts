@@ -158,6 +158,17 @@ export interface PublicBarbershopMapItemApi {
 
 export type PublicBarbershopDetailApi = PublicBarbershopMapItemApi;
 
+export interface PublicUserLocationApi {
+  lat: number;
+  lng: number;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+  source: string;
+  is_exact: boolean;
+}
+
 export interface BarbershopCreateUpdatePayload {
   name: string;
   address: string;
@@ -542,4 +553,8 @@ export async function assignBarberToBarbershop(shopId: number, barberId: number)
     method: "POST",
     body: JSON.stringify({ barber_id: barberId }),
   });
+}
+
+export async function getPublicUserLocationByIp(): Promise<PublicUserLocationApi> {
+  return requestJson<PublicUserLocationApi>("/public/location-by-ip");
 }

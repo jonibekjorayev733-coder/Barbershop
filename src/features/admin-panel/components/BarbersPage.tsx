@@ -1,16 +1,12 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { barberStatusLabel, topCopy } from "../copy";
-import { ICal, IPhone, IPlus, ISciss, IStar, ITrend, IUsers } from "../icons";
+import { ICal, IPhone, ISciss, IStar, ITrend, IUsers } from "../icons";
 import {
-  assignBarberToBarbershop,
-  createBarber,
   deleteBarber,
   getBarbers,
-  getPublicBarbershops,
   updateBarber,
   type BarberApi,
   type BarberApiPayload,
-  type PublicBarbershopMapItemApi,
 } from "../api";
 import { StatCard } from "./StatCard";
 import type { BarberStatus } from "../types";
@@ -120,10 +116,6 @@ export function BarbersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BarberApi | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [shops, setShops] = useState<PublicBarbershopMapItemApi[]>([]);
-  const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
-  const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
-  const [isAssigning, setIsAssigning] = useState(false);
 
   const isEditing = editingId !== null;
 
@@ -147,21 +139,8 @@ export function BarbersPage() {
     }
   };
 
-  const loadShops = async () => {
-    try {
-      const rows = await getPublicBarbershops();
-      setShops(rows);
-      if (rows.length > 0 && selectedShopId === null) {
-        setSelectedShopId(rows[0].id);
-      }
-    } catch {
-      return;
-    }
-  };
-
   useEffect(() => {
     void loadBarbers();
-    void loadShops();
   }, []);
 
   useEffect(() => {
@@ -202,31 +181,6 @@ export function BarbersPage() {
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handleAssignBarber = async () => {
-    if (!selectedShopId || !selectedBarberId) {
-      showToast("error", "Salon va sartaroshni tanlang.");
-      return;
-    }
-
-    try {
-      setIsAssigning(true);
-      await assignBarberToBarbershop(selectedShopId, selectedBarberId);
-      await Promise.all([loadBarbers(), loadShops()]);
-      showToast("success", "Sartarosh salonга biriktirildi.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Biriktirishda xatolik yuz berdi.";
-      showToast("error", message);
-    } finally {
-      setIsAssigning(false);
-    }
-  };
-
-  const openCreateDrawer = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setIsDrawerOpen(true);
   };
 
   const openEditDrawer = (barber: BarberApi) => {
@@ -281,8 +235,8 @@ export function BarbersPage() {
       return;
     }
 
-    if (!isEditing && !form.password.trim()) {
-      const message = "Yangi sartarosh uchun parol kiriting.";
+    if (!isEditing || editingId === null) {
+      const message = "Yangi sartarosh qo'shish o'chirilgan. Faqat mavjud profilni tahrirlash mumkin.";
       setErrorMessage(message);
       showToast("error", message);
       return;
@@ -293,17 +247,13 @@ export function BarbersPage() {
       setErrorMessage(null);
       const payload = toPayload(form);
 
-      if (isEditing && editingId !== null) {
-        await updateBarber(editingId, payload);
-      } else {
-        await createBarber(payload);
-      }
+      await updateBarber(editingId, payload);
 
       await loadBarbers();
       setIsDrawerOpen(false);
       setEditingId(null);
       setForm(emptyForm);
-      showToast("success", isEditing ? "Sartarosh ma'lumoti yangilandi." : "Yangi sartarosh qo'shildi.");
+      showToast("success", "Sartarosh ma'lumoti yangilandi.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Saqlashda xatolik yuz berdi.";
       setErrorMessage(message);
@@ -337,54 +287,9 @@ export function BarbersPage() {
           <h2 className="ph-title">{topCopy.barbers.title}</h2>
           <p className="ph-sub">{topCopy.barbers.subtitle}</p>
         </div>
-        <button className="btn-glow" onClick={openCreateDrawer}>
-          <IPlus /> {topCopy.barbers.cta}
-        </button>
       </div>
 
       {errorMessage ? <div className="barber-alert">{errorMessage}</div> : null}
-
-      <section className="barber-assign-panel">
-        <div className="barber-assign-head">
-          <h3>Sartaroshni sartaroshxonaga qo'shish</h3>
-          <p>Admin paneldan salon tanlab, sartaroshni biriktirasiz.</p>
-        </div>
-        <div className="barber-assign-grid">
-          <label className="barber-field">
-            <span>Sartaroshxona</span>
-            <select
-              value={selectedShopId ?? ""}
-              onChange={(event) => setSelectedShopId(Number(event.target.value) || null)}
-            >
-              <option value="">Tanlang</option>
-              {shops.map((shop) => (
-                <option key={shop.id} value={shop.id}>
-                  {shop.name} ({shop.barber_count} ta)
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="barber-field">
-            <span>Sartarosh</span>
-            <select
-              value={selectedBarberId ?? ""}
-              onChange={(event) => setSelectedBarberId(Number(event.target.value) || null)}
-            >
-              <option value="">Tanlang</option>
-              {barbers.map((barber) => (
-                <option key={barber.id} value={barber.id}>
-                  {barber.name} {barber.barbershop_id ? "(biriktirilgan)" : "(erkin)"}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button type="button" className="ba-pri barber-assign-btn" onClick={() => void handleAssignBarber()} disabled={isAssigning}>
-            {isAssigning ? "Biriktirilmoqda..." : "Salonga biriktirish"}
-          </button>
-        </div>
-      </section>
 
       <div className="sc-row">
         <StatCard
@@ -495,7 +400,7 @@ export function BarbersPage() {
         <div className="barber-drawer-overlay" onClick={closeDrawer}>
           <aside className="barber-drawer" onClick={(event) => event.stopPropagation()}>
             <div className="barber-drawer-head">
-              <h3>{isEditing ? "Sartaroshni tahrirlash" : "Yangi sartarosh qo'shish"}</h3>
+              <h3>Sartaroshni tahrirlash</h3>
               <button className="barber-drawer-close" onClick={closeDrawer} aria-label="Yopish">
                 ×
               </button>
@@ -600,7 +505,7 @@ export function BarbersPage() {
                   Bekor qilish
                 </button>
                 <button type="submit" className="ba-pri" style={{ background: gradientByStatus[form.status] }} disabled={isSaving}>
-                  {isSaving ? "Saqlanmoqda..." : isEditing ? "Saqlash" : "Qo'shish"}
+                  {isSaving ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
               </div>
             </form>
