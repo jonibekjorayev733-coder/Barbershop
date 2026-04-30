@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { FiBell, FiCalendar, FiClock, FiMapPin, FiScissors, FiSettings, FiUser } from "react-icons/fi";
 import {
   approveBarberAppointment,
   getBarberAppointments,
@@ -395,6 +396,20 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
   const currentAvatar = avatarPreview || barberAvatar;
   const initials = getInitials(profName || barberName);
+  const pageTitle = view === "dashboard"
+    ? "Sartarosh boshqaruvi"
+    : view === "schedule"
+      ? "Bugungi jadval"
+      : view === "profile"
+        ? "Profil va joylashuv"
+        : "Habarnomalar markazi";
+  const pageSubtitle = view === "dashboard"
+    ? "Bugungi oqim, keyingi mijoz va tasdiqlashlarni bir joydan boshqaring."
+    : view === "schedule"
+      ? "Mijozlar oqimi, vaqtlar va har bir bron holatini real vaqtda kuzating."
+      : view === "profile"
+        ? "Xizmat narxi, mutaxassislik va xaritadagi lokatsiyani shu yerda yangilang."
+        : "Tizimdagi yangi bronlar va barberga tegishli ogohlantirishlar shu yerga tushadi.";
 
   return (
     <div className="bp-shell">
@@ -413,20 +428,40 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
       <div className="bp-panel-grid">
         <aside className="bp-left-menu">
-          <button className={`bp-left-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>Boshqaruv</button>
-          <button className={`bp-left-btn ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}>Jadval</button>
-          <button className={`bp-left-btn ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}>Profile</button>
-          <button className={`bp-left-btn ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>Habarnomalar</button>
+          <div className="bp-side-brand">
+            <div className="bp-side-logo"><FiScissors /></div>
+            <div>
+              <strong>SharpCuts</strong>
+              <span>Barber panel</span>
+            </div>
+          </div>
+
+          <div className="bp-side-section-title">Menyu</div>
+          <button className={`bp-left-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><FiScissors /><span>Boshqaruv</span></button>
+          <button className={`bp-left-btn ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}><FiCalendar /><span>Jadval</span></button>
+          <button className={`bp-left-btn ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}><FiSettings /><span>Profil</span></button>
+          <button className={`bp-left-btn ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}><FiBell /><span>Habarnomalar</span></button>
+
+          <div className="bp-side-profile-card">
+            <div className="bp-side-avatar-wrap">
+              {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-side-avatar" /> : <div className="bp-side-avatar bp-side-avatar-fallback">{initials}</div>}
+            </div>
+            <strong>{dashboard?.barber_name || barberName}</strong>
+            <span>{profSpecialty || "Professional barber"}</span>
+            <small>{profLocationAddress || "Lokatsiya hali kiritilmagan"}</small>
+          </div>
         </aside>
 
         <div className="bp-main-panel">
           <header className="bp-head">
-            <div>
-              <div className="bp-greet">Bugungi smena nazorati</div>
-              <h2>{dashboard?.barber_name || barberName}</h2>
-              <div className="bp-date">{humanDate}</div>
+            <div className="bp-page-copy">
+              <div className="bp-greet">Bugungi holat</div>
+              <h2>{pageTitle}</h2>
+              <div className="bp-date">{pageSubtitle}</div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="bp-head-actions">
+              <div className="bp-head-chip">{humanDate}</div>
+              <div className="bp-head-chip bp-head-chip-soft">{dashboard?.today_total ?? 0} bron bugun</div>
               <button type="button" className="bp-av-btn" onClick={() => setView("profile")} aria-label="Profil">
                 {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-av-img" /> : <span className="bp-av-placeholder">{initials}</span>}
               </button>
@@ -564,15 +599,15 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
               <div className="bp-dashboard-grid">
                 <div className="bp-main-col">
                   <div className="bp-stats">
-                    <article className="bp-stat bp-stat-dark">
+                    <article className="bp-stat bp-stat-dark bp-stat-primary">
                       <strong>{dashboard?.today_total ?? 0}</strong>
                       <span>Bugun</span>
                     </article>
-                    <article className="bp-stat bp-stat-soft">
+                    <article className="bp-stat bp-stat-soft bp-stat-success">
                       <strong>{dashboard?.today_done ?? 0}</strong>
                       <span>Tasdiqlangan</span>
                     </article>
-                    <article className="bp-stat">
+                    <article className="bp-stat bp-stat-warning">
                       <strong>{dashboard?.today_pending ?? 0}</strong>
                       <span>Kutilmoqda</span>
                     </article>
@@ -604,7 +639,11 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                       <b>{dashboard?.next_appointment?.appointment_time ?? "--"}</b>
                     </div>
                     <h3>{dashboard?.next_appointment?.client_name ?? "Hamma bronlar yakunlangan"}</h3>
-                    <p>{dashboard?.next_appointment?.client_phone ?? ""}</p>
+                    <p>{dashboard?.next_appointment?.client_phone ?? "Bo'sh vaqt oynasi"}</p>
+                    <div className="bp-next-meta">
+                      <span><FiUser /> {dashboard?.barber_name || barberName}</span>
+                      <span><FiClock /> {dashboard?.next_appointment?.appointment_time ?? "Kun yopildi"}</span>
+                    </div>
                     <button
                       className="bp-complete-btn"
                       disabled={!dashboard?.next_appointment || isUpdating === dashboard.next_appointment.id}

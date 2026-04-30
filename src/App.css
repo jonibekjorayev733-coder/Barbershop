@@ -5491,3 +5491,544 @@ body::before {
     height: 280px;
   }
 }
+
+/* ===== Final premium admin-like polish for user + barber panels ===== */
+
+.ub-shell,
+.bp-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.ub-panel-grid,
+.bp-panel-grid {
+  width: min(1380px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.ub-left-menu,
+.bp-left-menu {
+  padding: 16px;
+  border-radius: 22px;
+  position: sticky;
+  top: 24px;
+}
+
+.ub-side-brand,
+.bp-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ub-side-logo,
+.bp-side-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+}
+
+.ub-side-logo svg,
+.bp-side-logo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ub-side-brand strong,
+.bp-side-brand strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+
+.ub-side-brand span,
+.bp-side-brand span {
+  display: block;
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+}
+
+.ub-side-section-title,
+.bp-side-section-title {
+  margin: 6px 0 2px;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.ub-left-btn,
+.bp-left-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  padding: 0 14px;
+}
+
+.ub-left-btn svg,
+.bp-left-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.ub-left-btn span,
+.bp-left-btn span {
+  font-size: 14px;
+}
+
+.ub-side-profile-card,
+.bp-side-profile-card {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 6px;
+}
+
+.ub-side-avatar-wrap,
+.bp-side-avatar-wrap {
+  margin-bottom: 4px;
+}
+
+.ub-side-avatar,
+.bp-side-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  font-weight: 800;
+}
+
+.ub-side-avatar-fallback,
+.bp-side-avatar-fallback {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.9), rgba(59, 130, 246, 0.6));
+}
+
+.ub-side-profile-card strong,
+.bp-side-profile-card strong {
+  color: #f8fafc;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ub-side-profile-card span,
+.bp-side-profile-card span {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.ub-side-profile-card small,
+.bp-side-profile-card small {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ub-main-panel,
+.bp-main-panel {
+  gap: 18px;
+}
+
+.ub-page-head,
+.bp-head {
+  padding: 22px 24px;
+  border-radius: 24px;
+  margin-bottom: 0;
+}
+
+.ub-page-copy,
+.bp-page-copy {
+  min-width: 0;
+}
+
+.ub-head-actions,
+.bp-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ub-head-chip,
+.bp-head-chip {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.05);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ub-head-chip-soft,
+.bp-head-chip-soft {
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.ub-kpi-grid,
+.bp-stats {
+  gap: 16px;
+}
+
+.ub-kpi-item,
+.bp-stat {
+  min-height: 148px;
+  padding: 20px 18px;
+  border-radius: 22px;
+}
+
+.ub-kpi-item span,
+.bp-stat span {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ub-kpi-item strong,
+.bp-stat strong {
+  font-size: 46px;
+  line-height: 1;
+  margin-top: auto;
+  margin-bottom: 6px;
+}
+
+.ub-kpi-item-primary,
+.bp-stat-primary {
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  border-color: rgba(96, 165, 250, 0.32);
+}
+
+.ub-kpi-item-success,
+.bp-stat-success {
+  background: linear-gradient(135deg, #047857, #10b981);
+  border-color: rgba(52, 211, 153, 0.28);
+}
+
+.ub-kpi-item-warning,
+.bp-stat-warning {
+  background: linear-gradient(135deg, #b45309, #f59e0b);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.ub-process {
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+.ub-process-step {
+  min-height: 68px;
+  padding: 14px 16px;
+  border-radius: 18px;
+}
+
+.ub-booking-grid {
+  gap: 18px;
+}
+
+.ub-list-headline {
+  margin-bottom: 14px;
+}
+
+.ub-list-sub {
+  margin-top: 4px;
+}
+
+.ub-barbers-list-wrap,
+.ub-side-card-guide,
+.bp-today-card,
+.bp-location-picker-card,
+.bp-notification-page,
+.bp-profile-page,
+.ub-profile-page {
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.ub-side-card-guide {
+  display: grid;
+  gap: 14px;
+}
+
+.ub-side-title {
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ub-side-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.ub-side-steps > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #dbeafe;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ub-side-steps > div > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ub-side-stat-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ub-side-stat-list div {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ub-side-stat-list strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ub-side-stat-list span {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.ub-barber-list {
+  gap: 12px;
+}
+
+.ub-barber-row {
+  min-height: 96px;
+  padding: 14px 16px;
+  border-radius: 18px;
+}
+
+.ub-barber-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+}
+
+.ub-go {
+  width: 42px;
+  height: 42px;
+}
+
+.ub-detail-toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ub-bd-hero,
+.ub-bd-section,
+.ub-booking-summary,
+.ub-success-summary,
+.ub-rating-box,
+.bp-progress-card,
+.bp-next-card,
+.bp-day-block,
+.bp-filter-row,
+.bp-schedule-item,
+.bp-item,
+.bp-map-preview-card,
+.bp-location-summary-card {
+  border-radius: 18px;
+}
+
+.ub-bd-stats {
+  gap: 14px;
+}
+
+.ub-bd-stat {
+  min-height: 120px;
+  padding: 16px;
+}
+
+.ub-bd-stat strong {
+  font-size: 22px;
+}
+
+.ub-slots-grid {
+  gap: 14px;
+}
+
+.ub-slot {
+  min-height: 54px;
+  border-radius: 14px;
+}
+
+.ub-success-card {
+  min-height: auto;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.bp-progress-card,
+.bp-next-card,
+.bp-link-card,
+.bp-day-block,
+.bp-filter-row,
+.bp-schedule-item,
+.bp-item,
+.bp-today-card {
+  padding: 18px;
+}
+
+.bp-progress-fill {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+.bp-next-meta {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bp-next-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.bp-next-meta svg {
+  width: 14px;
+  height: 14px;
+  color: #93c5fd;
+}
+
+.bp-inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bp-chip.action.danger {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+}
+
+@media (max-width: 1100px) {
+  .ub-panel-grid,
+  .bp-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-left-menu,
+  .bp-left-menu {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .ub-side-brand,
+  .bp-side-brand,
+  .ub-side-section-title,
+  .bp-side-section-title,
+  .ub-side-profile-card,
+  .bp-side-profile-card {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .ub-shell,
+  .bp-shell {
+    padding: 12px;
+  }
+
+  .ub-left-menu,
+  .bp-left-menu,
+  .ub-page-head,
+  .bp-head,
+  .ub-card,
+  .bp-wrap {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .ub-head-actions,
+  .bp-head-actions,
+  .ub-detail-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .ub-kpi-grid,
+  .ub-process,
+  .bp-stats,
+  .ub-bd-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-left-menu,
+  .bp-left-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-booking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-barber-row {
+    align-items: flex-start;
+  }
+
+  .ub-go {
+    margin-top: 6px;
+  }
+}

@@ -521,37 +521,84 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
     window.open(`https://www.google.com/maps/dir/?${params.toString()}`, "_blank", "noopener,noreferrer");
   };
 
+  const pageTitle = view === "profile"
+    ? "Profil boshqaruvi"
+    : step === "barbers"
+      ? "Yaqin sartaroshlar"
+      : step === "barber-detail"
+        ? "Sartarosh tafsilotlari"
+        : step === "times"
+          ? "Qulay vaqtni tanlang"
+          : step === "details"
+            ? "Bronni yakunlang"
+            : "Bron tasdiqlandi";
+
+  const pageSubtitle = view === "profile"
+    ? "Hisobingiz, avataringiz va xavfsizlik ma'lumotlarini bir joydan boshqaring."
+    : step === "barbers"
+      ? `${locationLabel}. Eng yaqin va eng kuchli ustalar shu yerda.`
+      : step === "barber-detail"
+        ? "Narx, manzil va yo'nalishlarni ko'rib keyingi qadamga o'ting."
+        : step === "times"
+          ? "Jonli slotlardan mos vaqtni tanlab bronni davom ettiring."
+          : step === "details"
+            ? "Mijoz ma'lumotlarini to'ldirib bronni yuboring."
+            : "Buyurtma tayyor. Endi tafsilotlarni ulashish yoki baho berish mumkin.";
+
   return (
     <div className="ub-shell">
       {profileToast ? <div className={`ba-toast ba-toast-${profileToast.type}`}>{profileToast.message}</div> : null}
 
       <div className="ub-panel-grid">
-        {/* Left side navigation — same pattern as barber panel */}
         <aside className="ub-left-menu">
+          <div className="ub-side-brand">
+            <div className="ub-side-logo"><FiScissors /></div>
+            <div>
+              <strong>SharpCuts</strong>
+              <span>User panel</span>
+            </div>
+          </div>
+
+          <div className="ub-side-section-title">Menyu</div>
           <button
             className={`ub-left-btn ${view === "booking" ? "active" : ""}`}
             onClick={() => setView("booking")}
           >
-            Bron qilish
+            <FiCalendar />
+            <span>Bron qilish</span>
           </button>
           <button
             className={`ub-left-btn ${view === "profile" ? "active" : ""}`}
             onClick={() => setView("profile")}
           >
-            Profil
+            <FiShield />
+            <span>Profil</span>
           </button>
+
+          <div className="ub-side-profile-card">
+            <div className="ub-side-avatar-wrap">
+              {currentAvatar ? (
+                <img src={currentAvatar} alt={userName} className="ub-side-avatar" />
+              ) : (
+                <div className="ub-side-avatar ub-side-avatar-fallback">{initials}</div>
+              )}
+            </div>
+            <strong>{userName || "Foydalanuvchi"}</strong>
+            <span>{userEmail || "Telefon orqali tizimga kirgan"}</span>
+            <small>{locationLabel}</small>
+          </div>
         </aside>
 
-        {/* Main panel */}
         <div className="ub-main-panel">
-          {/* Header */}
           <header className="ub-page-head">
-            <div>
-              <div className="ub-page-eyebrow">Private booking lounge</div>
-              <h1 className="ub-page-title">Xush kelibsiz, {userName || "Mehmon"}</h1>
-              <p className="ub-page-sub">Eng yaqin ustani toping, yo'nalishni oching va bronni zamonaviy oqimda bir necha qadamda yakunlang.</p>
+            <div className="ub-page-copy">
+              <div className="ub-page-eyebrow">Bugungi holat</div>
+              <h1 className="ub-page-title">{pageTitle}</h1>
+              <p className="ub-page-sub">{pageSubtitle}</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="ub-head-actions">
+              <div className="ub-head-chip">{formatHumanDate(selectedDate)}</div>
+              <div className="ub-head-chip ub-head-chip-soft">{barbers.length} usta mavjud</div>
               <button type="button" className="ub-av-btn" onClick={() => setView("profile")} aria-label="Profil">
                 {currentAvatar ? (
                   <img src={currentAvatar} alt={userName} className="ub-av-img" />
@@ -628,23 +675,21 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
           {/* ── Booking flow ── */}
           {view === "booking" ? (
             <>
-              {/* KPI stats */}
               <div className="ub-kpi-grid">
-                <div className="ub-kpi-item">
+                <div className="ub-kpi-item ub-kpi-item-primary">
                   <span>Sartaroshlar</span>
                   <strong>{barbers.length}</strong>
                 </div>
-                <div className="ub-kpi-item">
+                <div className="ub-kpi-item ub-kpi-item-success">
                   <span>O'rtacha reyting</span>
                   <strong>{averageRating}</strong>
                 </div>
-                <div className="ub-kpi-item">
+                <div className="ub-kpi-item ub-kpi-item-warning">
                   <span>Eng tajribali</span>
                   <strong>{maxExperience}+ yil</strong>
                 </div>
               </div>
 
-              {/* Step indicator */}
               <div className="ub-process">
                 {BOOKING_STEPS.map((bookingStep, index) => {
                   const stepNumber = index + 1;
@@ -661,7 +706,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
 
               {errorMessage ? <div className="ub-error">{errorMessage}</div> : null}
 
-              {/* Barber list */}
               {step === "barbers" ? (
                 <section className="ub-card ub-card-barbers">
                   <div className="ub-booking-grid">
@@ -717,21 +761,25 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                     </div>
 
                     <aside className="ub-side-card ub-side-card-guide">
-                      <div className="ub-side-title">Qanday ishlaydi?</div>
+                      <div className="ub-side-title">Bron navigator</div>
                       <div className="ub-side-steps">
                         <div><span>1</span>Sartaroshni tanlang</div>
                         <div><span>2</span>Bo'sh vaqtni belgilang</div>
                         <div><span>3</span>Ma'lumotni tasdiqlang</div>
+                      </div>
+                      <div className="ub-side-stat-list">
+                        <div><strong>{locationLabel}</strong><span>Lokatsiya oqimi</span></div>
+                        <div><strong>{filteredBarbers.length}</strong><span>Filtrlangan natija</span></div>
+                        <div><strong>{preferredBarberId ? "Tanlangan" : "Standart"}</strong><span>Asosiy barber holati</span></div>
                       </div>
                     </aside>
                   </div>
                 </section>
               ) : null}
 
-              {/* Barber detail */}
               {step === "barber-detail" && selectedBarber ? (
                 <section className="ub-card ub-barber-detail-card">
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                  <div className="ub-detail-toolbar">
                     <button className="ub-back-btn" onClick={() => setStep("barbers")}>← Orqaga</button>
                     <button className="ub-back-btn" onClick={openDirectionsToBarber}>📍 Sartaroshga borish</button>
                   </div>
@@ -784,7 +832,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                 </section>
               ) : null}
 
-              {/* Time selection */}
               {step === "times" && selectedBarber ? (
                 <section className="ub-card">
                   <div className="ub-step-head">
@@ -845,7 +892,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                 </section>
               ) : null}
 
-              {/* Details form */}
               {step === "details" && selectedBarber ? (
                 <section className="ub-card">
                   <div className="ub-step-head">
@@ -887,7 +933,6 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                 </section>
               ) : null}
 
-              {/* Success */}
               {step === "success" && confirmation ? (
                 <section className="ub-card ub-success-card">
                   <div className="ub-success-icon-wrap">
