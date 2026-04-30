@@ -1,4 +1,3 @@
-
 /* ═══════════════════════════════════════════════════════════════
    SHARP CUTS — Dark + Ice Blue Premium Admin Panel
    ═══════════════════════════════════════════════════════════════ */
@@ -3594,14 +3593,14 @@ body::before {
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
 }
 
-/* ===== Glassmorphism Refresh (User + Barber Panels) ===== */
+/* ===== LIGHT THEME - User + Barber Panels ===== */
 
 .bp-shell,
 .ub-shell {
   background:
-    radial-gradient(50rem 24rem at 80% 0%, rgba(59, 130, 246, 0.08), transparent 60%),
-    radial-gradient(40rem 22rem at 0% 100%, rgba(99, 102, 241, 0.06), transparent 60%),
-    linear-gradient(180deg, #050507 0%, #070709 55%, #06060a 100%);
+    radial-gradient(50rem 24rem at 80% 0%, rgba(59, 130, 246, 0.06), transparent 60%),
+    radial-gradient(40rem 22rem at 0% 100%, rgba(99, 102, 241, 0.04), transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%) !important;
 }
 
 .bp-wrap,
@@ -3617,11 +3616,11 @@ body::before {
 .bp-day-block,
 .bp-filter-row,
 .bp-schedule-item {
-  background: linear-gradient(140deg, rgba(18, 18, 22, 0.85), rgba(10, 10, 14, 0.72));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
-  backdrop-filter: blur(18px) saturate(130%);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(249, 250, 251, 0.92)) !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .bp-wrap,
@@ -3638,18 +3637,20 @@ body::before {
   width: 24rem;
   height: 24rem;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(148, 197, 255, 0.2), transparent 68%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 68%);
   pointer-events: none;
 }
 
 .ub-page-head {
-  border-radius: 24px;
+  border-radius: 24px !important;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(249, 250, 251, 0.92)) !important;
+  border: 1px solid #e5e7eb !important;
 }
 
 .ub-process-step.active,
 .ub-process-step.done {
-  border-color: rgba(96, 165, 250, 0.5);
-  background: linear-gradient(140deg, rgba(37, 99, 235, 0.24), rgba(99, 102, 241, 0.14));
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  background: linear-gradient(140deg, rgba(219, 234, 254, 0.8), rgba(224, 242, 254, 0.72)) !important;
 }
 
 .ub-kpi-item,
@@ -3661,10 +3662,10 @@ body::before {
 .ub-success-summary,
 .bp-chip.action,
 .bp-filter-row button.active {
-  background: linear-gradient(140deg, rgba(20, 20, 28, 0.88), rgba(12, 12, 18, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.88)) !important;
+  border: 1px solid #e5e7eb !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .ub-search-input,
@@ -3686,22 +3687,23 @@ body::before {
 
 .ub-search-input,
 .ub-field input {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
 }
 
 .ub-search-input::placeholder,
 .ub-field input::placeholder {
-  color: rgba(226, 232, 240, 0.58);
+  color: #9ca3af !important;
 }
 
 .ub-primary,
 .bp-complete-btn,
 .bp-chip.action {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(99, 102, 241, 0.92));
-  color: #eef5ff;
-  border: 1px solid rgba(191, 219, 254, 0.32);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.34);
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: #ffffff !important;
+  border: 1px solid #60a5fa !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
 }
 
 .ub-secondary,
@@ -3710,9 +3712,9 @@ body::before {
 .bp-back,
 .ub-back,
 .ub-back-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #e6efff;
+  background: rgba(243, 244, 246, 0.9) !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
 }
 
 .ub-primary:hover,
@@ -3735,7 +3737,7 @@ body::before {
 .ub-page-title,
 .ub-title,
 .ub-bd-hero-info h2 {
-  color: #f8fbff;
+  color: #111827 !important;
 }
 
 .bp-date,
@@ -3748,17 +3750,17 @@ body::before {
 .bp-day-meta small,
 .bp-schedule-sub,
 .bp-schedule-line {
-  color: rgba(226, 232, 240, 0.72);
+  color: #6b7280 !important;
 }
 
 .bp-stat-dark,
 .bp-stat-soft {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
-  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.88)) !important;
+  border-color: #e5e7eb !important;
 }
 
 .bp-progress-track {
-  background: rgba(255, 255, 255, 0.18);
+  background: #e5e7eb !important;
 }
 
 .bp-progress-fill {
@@ -3766,13 +3768,15 @@ body::before {
 }
 
 .bp-chip.done {
-  background: rgba(34, 197, 94, 0.24);
-  border: 1px solid rgba(134, 239, 172, 0.42);
+  background: rgba(240, 253, 244, 0.9) !important;
+  border: 1px solid rgba(134, 239, 172, 0.6) !important;
+  color: #15803d !important;
 }
 
 .bp-chip.pending {
-  background: rgba(245, 158, 11, 0.22);
-  border: 1px solid rgba(252, 211, 77, 0.38);
+  background: rgba(254, 252, 232, 0.9) !important;
+  border: 1px solid rgba(252, 211, 77, 0.6) !important;
+  color: #b45309 !important;
 }
 
 .ub-layout-v2 {
@@ -3803,17 +3807,17 @@ body::before {
 }
 
 .ub-side-card {
-  background: linear-gradient(140deg, rgba(18, 18, 26, 0.88), rgba(10, 10, 16, 0.75));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.88)) !important;
+  border: 1px solid #e5e7eb !important;
   border-radius: 18px;
   padding: 14px;
   margin-bottom: 12px;
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .ub-side-title {
-  color: #f8fbff;
+  color: #111827 !important;
   font-weight: 700;
   margin-bottom: 10px;
 }
@@ -3827,13 +3831,13 @@ body::before {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(226, 232, 240, 0.88);
+  color: #374151 !important;
   font-weight: 500;
   font-size: 0.92rem;
   padding: 8px 10px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(249, 250, 251, 0.9) !important;
+  border: 1px solid #d1d5db !important;
 }
 
 .ub-side-steps > div > span {
@@ -5011,9 +5015,9 @@ body::before {
 .bp-shell,
 .ub-shell {
   background:
-    radial-gradient(38rem 18rem at -10% -10%, rgba(59, 130, 246, 0.11), transparent 70%),
-    radial-gradient(30rem 16rem at 110% 0%, rgba(14, 165, 233, 0.1), transparent 70%),
-    linear-gradient(180deg, #070b14 0%, #090f1d 58%, #060913 100%);
+    radial-gradient(38rem 18rem at -10% -10%, rgba(59, 130, 246, 0.06), transparent 70%),
+    radial-gradient(30rem 16rem at 110% 0%, rgba(14, 165, 233, 0.04), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%) !important;
 }
 
 .bp-shell .bp-head,
@@ -5882,3 +5886,32 @@ body::before {
     margin-top: 6px;
   }
 }
+
+/* 🔥🔥🔥 NUCLEAR LIGHT THEME OVERRIDE — BARBER/USER PANELS ONLY 🔥🔥🔥 */
+/* This must be LAST to override all previous dark definitions */
+
+.bp-shell,
+.ub-shell {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%) !important;
+  color: #111827 !important;
+}
+
+.bp-shell *,
+.ub-shell * {
+  color: #111827 !important;
+  background-color: transparent !important;
+}
+
+.bp-wrap, .bp-stat, .bp-card, .bp-item, .bp-next-card, .bp-progress-card,
+.ub-card, .ub-page-head, .ub-shell-details, .ub-shell-success {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.bp-left-menu, .ub-left-menu {
+  background: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+/* END NUCLEAR OVERRIDE */
