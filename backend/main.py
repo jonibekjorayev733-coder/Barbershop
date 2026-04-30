@@ -55,6 +55,9 @@ INSTANCE_ID = os.getenv("INSTANCE_ID", str(uuid.uuid4()))
 MAX_WS_TOTAL_CONNECTIONS = int(os.getenv("MAX_WS_TOTAL_CONNECTIONS", "800"))
 MAX_WS_CHANNEL_CONNECTIONS = int(os.getenv("MAX_WS_CHANNEL_CONNECTIONS", "250"))
 MAX_WS_USER_CONNECTIONS = int(os.getenv("MAX_WS_USER_CONNECTIONS", "30"))
+PHONE_OTP_EXPIRY_SECONDS = int(os.getenv("PHONE_OTP_EXPIRY_SECONDS", "300"))
+PHONE_OTP_RESEND_SECONDS = int(os.getenv("PHONE_OTP_RESEND_SECONDS", "45"))
+PHONE_OTP_DEBUG = os.getenv("PHONE_OTP_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 REALTIME_METRICS: Dict[str, int] = {
     "ws_connected": 0,
@@ -753,6 +756,192 @@ def normalize_phone(phone: Optional[str]) -> str:
     if not phone:
         return ""
     return "".join(ch for ch in str(phone) if ch.isdigit())
+
+
+def generate_phone_otp_code() -> str:
+    return f"{random.randint(0, 999999):06d}"
+
+
+def phone_placeholder_email(phone: str) -> str:
+    return f"{normalize_phone(phone)}@phone.local"
+
+
+def is_phone_placeholder_email(email_value: Optional[str]) -> bool:
+    return str(email_value or "").strip().lower().endswith("@phone.local")
+
+
+def build_login_response(user_id: int, role: str, name: str, email: Optional[str], avatar: Optional[str], phone: Optional[str] = None) -> dict:
+    normalized_role = (role or "student").strip().lower()
+    access_token = create_access_token({"user_id": user_id, "role": normalized_role})
+    safe_email = "" if is_phone_placeholder_email(email) else str(email or "")
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user_id,
+        "role": normalized_role,
+        "name": name,
+        "email": safe_email,
+        "phone": phone,
+        "avatar": avatar,
+    }
+
+
+def find_identity_by_phone(db: Session, phone: str):
+    normalized_target = normalize_phone(phone)
+    if not normalized_target:
+        return None, None
+
+    admins = db.query(models.Admin).all()
+    for admin in admins:
+        if normalize_phone(getattr(admin, "phone", None)) == normalized_target:
+            return "admin", admin
+
+    barbers = db.query(models.Barber).all()
+    for barber in barbers:
+        if normalize_phone(barber.phone) == normalized_target:
+            return "barber", barber
+
+    students = db.query(models.Student).all()
+    for student in students:
+        if normalize_phone(student.phone) == normalized_target:
+            return "student", student
+
+    return None, None
+
+
+def create_phone_student_account(db: Session, name: str, phone: str) -> models.Student:
+    normalized_phone = normalize_phone(phone)
+    normalized_name = (name or "").strip()
+    if not normalized_name:
+        raise HTTPException(status_code=400, detail="Yangi foydalanuvchi uchun ism majburiy")
+
+    placeholder_email = phone_placeholder_email(normalized_phone)
+    existing_student = db.query(models.Student).filter(func.lower(models.Student.email) == placeholder_email.lower()).first()
+    if existing_student:
+        existing_student.phone = normalized_phone
+        existing_student.name = existing_student.name or normalized_name
+        db.commit()
+        db.refresh(existing_student)
+        return existing_student
+
+    student = models.Student(
+        name=normalized_name,
+        email=placeholder_email,
+        password=hash_password(uuid.uuid4().hex + normalized_phone),
+        phone=normalized_phone,
+        role="student",
+    )
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict:
+    normalized_phone = normalize_phone(phone)
+    if not normalized_phone:
+        raise HTTPException(status_code=400, detail="Telefon raqam noto'g'ri")
+
+    now_value = now_tashkent()
+    latest_row = db.execute(
+        text(
+            """
+            SELECT id, created_at
+            FROM phone_otp_auth
+            WHERE phone = :phone AND is_used = FALSE AND expires_at > :now_value
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ),
+        {"phone": normalized_phone, "now_value": now_value},
+    ).mappings().first()
+
+    if latest_row and latest_row.get("created_at"):
+        created_at = latest_row["created_at"]
+        if isinstance(created_at, datetime) and (now_value - created_at).total_seconds() < PHONE_OTP_RESEND_SECONDS:
+            raise HTTPException(status_code=429, detail="SMS kod yaqinda yuborilgan. Biroz kutib qayta urinib ko'ring")
+
+    otp_code = generate_phone_otp_code()
+    expires_at = now_value + timedelta(seconds=PHONE_OTP_EXPIRY_SECONDS)
+    db.execute(text("UPDATE phone_otp_auth SET is_used = TRUE, used_at = :now_value WHERE phone = :phone AND is_used = FALSE"), {
+        "now_value": now_value,
+        "phone": normalized_phone,
+    })
+    db.execute(
+        text(
+            """
+            INSERT INTO phone_otp_auth (phone, code, name, expires_at, created_at)
+            VALUES (:phone, :code, :name, :expires_at, :created_at)
+            """
+        ),
+        {
+            "phone": normalized_phone,
+            "code": otp_code,
+            "name": (name or "").strip() or None,
+            "expires_at": expires_at,
+            "created_at": now_value,
+        },
+    )
+    db.commit()
+
+    sent = send_sms_via_webhook(normalized_phone, f"Sharp Cuts tasdiqlash kodi: {otp_code}. Kod {PHONE_OTP_EXPIRY_SECONDS // 60} daqiqa amal qiladi.")
+    return {
+        "success": True,
+        "phone": normalized_phone,
+        "expires_in_seconds": PHONE_OTP_EXPIRY_SECONDS,
+        "delivery_status": "sent" if sent else "debug",
+        "debug_code": None if sent and not PHONE_OTP_DEBUG else otp_code,
+        "message": "SMS kod yuborildi" if sent else "SMS provider topilmadi, debug kod qaytarildi",
+    }
+
+
+def verify_phone_otp_and_login(db: Session, phone: str, code: str, name: Optional[str]) -> dict:
+    normalized_phone = normalize_phone(phone)
+    normalized_code = "".join(ch for ch in str(code or "") if ch.isdigit())
+    if not normalized_phone or len(normalized_code) != 6:
+        raise HTTPException(status_code=400, detail="Telefon yoki SMS kodi noto'g'ri")
+
+    now_value = now_tashkent()
+    row = db.execute(
+        text(
+            """
+            SELECT id, phone, code, name, expires_at, attempts
+            FROM phone_otp_auth
+            WHERE phone = :phone AND is_used = FALSE
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ),
+        {"phone": normalized_phone},
+    ).mappings().first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Bu telefon uchun aktiv SMS kod topilmadi")
+
+    if row.get("expires_at") and isinstance(row["expires_at"], datetime) and row["expires_at"] < now_value:
+        raise HTTPException(status_code=400, detail="SMS kod muddati tugagan")
+
+    if str(row.get("code") or "") != normalized_code:
+        db.execute(text("UPDATE phone_otp_auth SET attempts = COALESCE(attempts, 0) + 1 WHERE id = :id"), {"id": row["id"]})
+        db.commit()
+        raise HTTPException(status_code=400, detail="SMS kodi noto'g'ri")
+
+    db.execute(text("UPDATE phone_otp_auth SET is_used = TRUE, used_at = :used_at WHERE id = :id"), {"used_at": now_value, "id": row["id"]})
+    db.commit()
+
+    entity_type, entity = find_identity_by_phone(db, normalized_phone)
+    if entity is None:
+        entity = create_phone_student_account(db, (name or row.get("name") or "").strip(), normalized_phone)
+        entity_type = "student"
+
+    if entity_type == "admin":
+        return build_login_response(entity.id, getattr(entity, "role", "admin"), entity.name, entity.email, entity.avatar, getattr(entity, "phone", None))
+
+    if entity_type == "barber":
+        seed_barber_appointments_if_empty(db, entity)
+        return build_login_response(entity.id, getattr(entity, "role", "barber"), entity.name, entity.username or "", entity.photo_url, entity.phone)
+
+    return build_login_response(entity.id, getattr(entity, "role", "student"), entity.name, entity.email, entity.avatar, entity.phone)
 
 
 def get_telegram_bot_token() -> str:
@@ -1536,6 +1725,7 @@ def ensure_legacy_schema_compatibility():
             email VARCHAR UNIQUE,
             password VARCHAR,
             name VARCHAR,
+            phone VARCHAR NULL,
             avatar VARCHAR NULL,
             role VARCHAR DEFAULT 'admin'
         )
@@ -1587,6 +1777,9 @@ def ensure_legacy_schema_compatibility():
             work_directions VARCHAR NULL,
             service_price FLOAT DEFAULT 40000,
             discount_percent FLOAT DEFAULT 0,
+            location_address VARCHAR NULL,
+            location_latitude FLOAT NULL,
+            location_longitude FLOAT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
         )
@@ -1634,6 +1827,7 @@ def ensure_legacy_schema_compatibility():
         "ALTER TABLE IF EXISTS student ADD COLUMN IF NOT EXISTS telegram_chat_id VARCHAR",
         "ALTER TABLE IF EXISTS student ADD COLUMN IF NOT EXISTS telegram_linked_at TIMESTAMP",
         "ALTER TABLE IF EXISTS admin ADD COLUMN IF NOT EXISTS avatar VARCHAR",
+        "ALTER TABLE IF EXISTS admin ADD COLUMN IF NOT EXISTS phone VARCHAR",
         "ALTER TABLE IF EXISTS admin ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'admin'",
         "ALTER TABLE IF EXISTS teacher ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'teacher'",
         "ALTER TABLE IF EXISTS student ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student'",
@@ -1642,6 +1836,9 @@ def ensure_legacy_schema_compatibility():
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS service_price FLOAT DEFAULT 40000",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS discount_percent FLOAT DEFAULT 0",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS barbershop_id INTEGER NULL",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS location_address VARCHAR",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS location_latitude FLOAT",
+        "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS location_longitude FLOAT",
         "ALTER TABLE IF EXISTS barber ADD COLUMN IF NOT EXISTS rating_votes INTEGER DEFAULT 0",
         "UPDATE admin SET role = 'admin' WHERE role IS NULL OR role = ''",
         "UPDATE teacher SET role = 'teacher' WHERE role IS NULL OR role = ''",
@@ -1672,6 +1869,19 @@ def ensure_legacy_schema_compatibility():
             service_name VARCHAR NULL,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS phone_otp_auth (
+            id SERIAL PRIMARY KEY,
+            phone VARCHAR NOT NULL,
+            code VARCHAR NOT NULL,
+            name VARCHAR NULL,
+            is_used BOOLEAN DEFAULT FALSE,
+            attempts INTEGER DEFAULT 0,
+            expires_at TIMESTAMP NOT NULL,
+            used_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT NOW()
         )
         """,
     ]
@@ -1987,17 +2197,7 @@ def register_user(payload: schemas.RegisterUserRequest, db: Session = Depends(ge
     db.add(db_student)
     db.commit()
     db.refresh(db_student)
-
-    access_token = create_access_token({"user_id": db_student.id, "role": "student"})
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_id": db_student.id,
-        "role": "student",
-        "name": db_student.name,
-        "email": db_student.email,
-        "avatar": db_student.avatar,
-    }
+    return build_login_response(db_student.id, "student", db_student.name, db_student.email, db_student.avatar, db_student.phone)
 
 @app.post("/auth/login", response_model=schemas.LoginResponse)
 def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
@@ -2014,16 +2214,7 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 
     if db_admin and verify_password(normalized_password, db_admin.password):
         admin_role = (db_admin.role or "admin").strip().lower()
-        access_token = create_access_token({"user_id": db_admin.id, "role": admin_role})
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": db_admin.id,
-            "role": admin_role,
-            "name": db_admin.name,
-            "email": db_admin.email,
-            "avatar": db_admin.avatar,
-        }
+        return build_login_response(db_admin.id, admin_role, db_admin.name, db_admin.email, db_admin.avatar, getattr(db_admin, "phone", None))
     
     # Check teacher (handle legacy duplicate-case emails safely)
     db_teachers = []
@@ -2047,16 +2238,7 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 
         if teacher_password_valid:
             teacher_role = (db_teacher.role or "teacher").strip().lower()
-            access_token = create_access_token({"user_id": db_teacher.id, "role": teacher_role})
-            return {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "user_id": db_teacher.id,
-                "role": teacher_role,
-                "name": db_teacher.name,
-                "email": db_teacher.email,
-                "avatar": db_teacher.avatar,
-            }
+            return build_login_response(db_teacher.id, teacher_role, db_teacher.name, db_teacher.email, db_teacher.avatar)
     
     # Check student
     db_student = None
@@ -2067,16 +2249,7 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 
     if db_student and verify_password(normalized_password, db_student.password):
         student_role = (db_student.role or "student").strip().lower()
-        access_token = create_access_token({"user_id": db_student.id, "role": student_role})
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": db_student.id,
-            "role": student_role,
-            "name": db_student.name,
-            "email": db_student.email,
-            "avatar": db_student.avatar,
-        }
+        return build_login_response(db_student.id, student_role, db_student.name, db_student.email, db_student.avatar, db_student.phone)
 
     db_barber = db.query(models.Barber).filter(func.lower(models.Barber.username) == normalized_email).first()
     if db_barber:
@@ -2096,18 +2269,19 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         if barber_password_valid:
             seed_barber_appointments_if_empty(db, db_barber)
             barber_role = (db_barber.role or "barber").strip().lower()
-            access_token = create_access_token({"user_id": db_barber.id, "role": barber_role})
-            return {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "user_id": db_barber.id,
-                "role": barber_role,
-                "name": db_barber.name,
-                "email": db_barber.username or "",
-                "avatar": db_barber.photo_url,
-            }
+            return build_login_response(db_barber.id, barber_role, db_barber.name, db_barber.username or "", db_barber.photo_url, db_barber.phone)
     
     raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
+
+
+@app.post("/auth/phone/request", response_model=schemas.PhoneOtpSendResponse)
+def request_phone_auth(payload: schemas.PhoneOtpRequest, db: Session = Depends(get_db)):
+    return save_phone_otp_request(db, payload.phone, payload.name)
+
+
+@app.post("/auth/phone/verify", response_model=schemas.LoginResponse)
+def verify_phone_auth(payload: schemas.PhoneOtpVerifyRequest, db: Session = Depends(get_db)):
+    return verify_phone_otp_and_login(db, payload.phone, payload.code, payload.name)
 
 @app.post("/auth/verify")
 def verify_token(authorization: Optional[str] = Header(None)):
@@ -2133,6 +2307,7 @@ def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
         email=admin.email,
         password=hashed_password,
         name=admin.name,
+        phone=normalize_phone(admin.phone),
         avatar=admin.avatar,
         role="admin",
     )
@@ -2165,6 +2340,7 @@ def update_admin(admin_id: int, admin: schemas.AdminUpdate, db: Session = Depend
 
     db_admin.email = normalized_email
     db_admin.name = normalized_name
+    db_admin.phone = normalize_phone(admin.phone)
     db_admin.avatar = (admin.avatar or "").strip() or None
 
     new_password = (admin.password or "").strip()
@@ -2652,6 +2828,9 @@ def get_barber_profile(barber_id: int, db: Session = Depends(get_db)):
         "work_directions": db_barber.work_directions,
         "service_price": db_barber.service_price,
         "discount_percent": clamp_discount_percent(db_barber.discount_percent),
+        "location_address": db_barber.location_address,
+        "location_latitude": db_barber.location_latitude,
+        "location_longitude": db_barber.location_longitude,
     }
 
 
@@ -2695,6 +2874,15 @@ def update_barber_profile(barber_id: int, payload: schemas.BarberProfileUpdate, 
     if payload.discount_percent is not None:
         db_barber.discount_percent = clamp_discount_percent(payload.discount_percent)
 
+    if payload.location_address is not None:
+        db_barber.location_address = payload.location_address.strip() or None
+
+    if payload.location_latitude is not None:
+        db_barber.location_latitude = float(payload.location_latitude)
+
+    if payload.location_longitude is not None:
+        db_barber.location_longitude = float(payload.location_longitude)
+
     next_password = (payload.password or "").strip()
     if next_password:
         password_error = get_password_policy_error(next_password)
@@ -2715,6 +2903,9 @@ def update_barber_profile(barber_id: int, payload: schemas.BarberProfileUpdate, 
             "work_directions": db_barber.work_directions,
             "service_price": get_barber_service_price(db_barber, db_barber.specialty),
             "discount_percent": clamp_discount_percent(db_barber.discount_percent),
+            "location_address": db_barber.location_address,
+            "location_latitude": db_barber.location_latitude,
+            "location_longitude": db_barber.location_longitude,
         },
     )
     schedule_realtime(
@@ -2857,9 +3048,12 @@ def get_user_booking_barbers(
     payload = []
     for item in rows:
         shop = item.barbershop
+        location_latitude = item.location_latitude if item.location_latitude is not None else (shop.latitude if shop is not None else None)
+        location_longitude = item.location_longitude if item.location_longitude is not None else (shop.longitude if shop is not None else None)
+        location_address = (item.location_address or "").strip() or (shop.address if shop is not None else None)
         distance_km = None
-        if lat is not None and lng is not None and shop is not None:
-            distance_km = round(haversine_distance_km(lat, lng, shop.latitude, shop.longitude), 2)
+        if lat is not None and lng is not None and location_latitude is not None and location_longitude is not None:
+            distance_km = round(haversine_distance_km(lat, lng, location_latitude, location_longitude), 2)
 
         if lat is not None and lng is not None and near_only:
             if distance_km is None or distance_km > normalized_max_distance:
@@ -2886,7 +3080,9 @@ def get_user_booking_barbers(
                 "discount_percent": clamp_discount_percent(item.discount_percent),
                 "distance_km": distance_km,
                 "barbershop_name": shop.name if shop is not None else None,
-                "barbershop_address": shop.address if shop is not None else None,
+                "barbershop_address": location_address,
+                "location_latitude": location_latitude,
+                "location_longitude": location_longitude,
             }
         )
 
@@ -3411,7 +3607,8 @@ def get_student_profile(student_id: int, db: Session = Depends(get_db)):
     return {
         "id": db_student.id,
         "name": db_student.name,
-        "email": db_student.email,
+        "email": "" if is_phone_placeholder_email(db_student.email) else db_student.email,
+        "phone": db_student.phone,
         "avatar": db_student.avatar,
     }
 
@@ -3422,22 +3619,23 @@ def update_student_profile(student_id: int, payload: schemas.StudentProfileUpdat
     if db_student is None:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
-    normalized_email = payload.email.strip().lower()
+    normalized_email = (payload.email or "").strip().lower()
     normalized_name = payload.name.strip()
-    if not normalized_email:
-        raise HTTPException(status_code=400, detail="Email majburiy")
+    normalized_phone = normalize_phone(payload.phone or db_student.phone)
     if not normalized_name:
         raise HTTPException(status_code=400, detail="Ism majburiy")
 
-    existing_student = db.query(models.Student).filter(
-        func.lower(models.Student.email) == normalized_email,
-        models.Student.id != student_id,
-    ).first()
-    if existing_student:
-        raise HTTPException(status_code=400, detail="Bu email boshqa foydalanuvchiga tegishli")
+    if normalized_email:
+        existing_student = db.query(models.Student).filter(
+            func.lower(models.Student.email) == normalized_email,
+            models.Student.id != student_id,
+        ).first()
+        if existing_student:
+            raise HTTPException(status_code=400, detail="Bu email boshqa foydalanuvchiga tegishli")
 
     db_student.name = normalized_name
-    db_student.email = normalized_email
+    db_student.email = normalized_email or phone_placeholder_email(normalized_phone) if normalized_phone else normalized_email
+    db_student.phone = normalized_phone or db_student.phone
     db_student.avatar = (payload.avatar or "").strip() or None
 
     next_password = (payload.password or "").strip()
@@ -3454,7 +3652,8 @@ def update_student_profile(student_id: int, payload: schemas.StudentProfileUpdat
     return {
         "id": db_student.id,
         "name": db_student.name,
-        "email": db_student.email,
+        "email": "" if is_phone_placeholder_email(db_student.email) else db_student.email,
+        "phone": db_student.phone,
         "avatar": db_student.avatar,
     }
 

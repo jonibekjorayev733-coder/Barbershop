@@ -15,6 +15,7 @@ import {
 import { LoginPage } from "./features/auth/LoginPage";
 import { BarberPanel } from "./features/barber-panel/BarberPanel";
 import { UserPanel } from "./features/user-panel/UserPanel";
+import { LocationGatePage } from "./features/public/LocationGatePage";
 import { PublicLoginPage } from "./features/public/PublicLoginPage";
 import type { Page } from "./features/admin-panel/types";
 import { subscribeProfileSync } from "./lib/profileSync";
@@ -31,6 +32,8 @@ interface AppSession {
 
 const SESSION_STORAGE_KEY = "sharpcuts_session";
 const PREFERRED_BARBER_STORAGE_KEY = "sharpcuts_preferred_barber";
+const PREAUTH_LOCATION_READY_KEY = "sharpcuts_preauth_location_ready";
+const PREAUTH_LOCATION_COORDS_KEY = "sharpcuts_preauth_location_coords";
 
 function readPreferredBarberId(): number | null {
   try {
@@ -118,6 +121,13 @@ export default function App() {
   const [page, setPage] = useState<Page>("dashboard");
   const [session, setSession] = useState<AppSession | null>(() => readStoredSession());
   const [preferredBarberId] = useState<number | null>(() => readPreferredBarberId());
+  const [isLocationGateDone, setIsLocationGateDone] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(PREAUTH_LOCATION_READY_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const isAdmin = session?.role === "admin";
   const isBarber = session?.role === "barber";
@@ -141,6 +151,18 @@ export default function App() {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     setSession(null);
     setPage("dashboard");
+  };
+
+  const handlePreauthLocationReady = (coords?: { lat: number; lng: number } | null) => {
+    try {
+      sessionStorage.setItem(PREAUTH_LOCATION_READY_KEY, "1");
+      if (coords) {
+        sessionStorage.setItem(PREAUTH_LOCATION_COORDS_KEY, JSON.stringify(coords));
+      }
+    } catch {
+      return;
+    }
+    setIsLocationGateDone(true);
   };
 
   useEffect(() => {
@@ -272,7 +294,7 @@ export default function App() {
         }
 
         const profile = await getStudentProfile(session.userId);
-        handleProfileUpdated({ name: profile.name, email: profile.email, avatar: profile.avatar });
+        handleProfileUpdated({ name: profile.name, email: profile.email ?? "", avatar: profile.avatar });
       } catch {
         return;
       }
@@ -282,6 +304,9 @@ export default function App() {
   }, [session?.userId, session?.role]);
 
   if (!session) {
+    if (!isLocationGateDone) {
+      return <LocationGatePage onResolved={handlePreauthLocationReady} />;
+    }
     return <PublicLoginPage onLogin={handleLogin} />;
   }
 

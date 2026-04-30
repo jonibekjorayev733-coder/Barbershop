@@ -63,6 +63,9 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
   const [profDirections, setProfDirections] = useState("");
   const [profServicePrice, setProfServicePrice] = useState("");
   const [profDiscountPercent, setProfDiscountPercent] = useState("");
+  const [profLocationAddress, setProfLocationAddress] = useState("");
+  const [profLocationLat, setProfLocationLat] = useState("");
+  const [profLocationLng, setProfLocationLng] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(barberAvatar ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [profileToast, setProfileToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -98,6 +101,16 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     [],
   );
 
+  const mapPreviewUrl = useMemo(() => {
+    if (profLocationLat.trim() && profLocationLng.trim()) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(`${profLocationLat},${profLocationLng}`)}&z=15&output=embed`;
+    }
+    if (profLocationAddress.trim()) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(profLocationAddress)}&z=15&output=embed`;
+    }
+    return "";
+  }, [profLocationAddress, profLocationLat, profLocationLng]);
+
   const loadDashboard = async () => {
     const data = await getBarberDashboard(barberId);
     setDashboard(data);
@@ -117,6 +130,9 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     setProfDirections(profile.work_directions ?? "");
     setProfServicePrice(profile.service_price != null ? String(Math.round(profile.service_price)) : "");
     setProfDiscountPercent(profile.discount_percent != null ? String(Math.round(profile.discount_percent)) : "0");
+    setProfLocationAddress(profile.location_address ?? "");
+    setProfLocationLat(profile.location_latitude != null ? String(profile.location_latitude) : "");
+    setProfLocationLng(profile.location_longitude != null ? String(profile.location_longitude) : "");
   };
 
   const loadNotifications = async () => {
@@ -212,6 +228,17 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
       return;
     }
 
+    const parsedLat = profLocationLat.trim() ? Number.parseFloat(profLocationLat) : undefined;
+    const parsedLng = profLocationLng.trim() ? Number.parseFloat(profLocationLng) : undefined;
+    if (profLocationLat.trim() && Number.isNaN(parsedLat as number)) {
+      showProfileToast("error", "Latitude noto'g'ri.");
+      return;
+    }
+    if (profLocationLng.trim() && Number.isNaN(parsedLng as number)) {
+      showProfileToast("error", "Longitude noto'g'ri.");
+      return;
+    }
+
     try {
       setIsSaving(true);
       const updated = await updateBarberProfile(barberId, {
@@ -223,6 +250,9 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         work_directions: profDirections.trim() || undefined,
         service_price: parsedPrice,
         discount_percent: parsedDiscount,
+        location_address: profLocationAddress.trim() || undefined,
+        location_latitude: parsedLat,
+        location_longitude: parsedLng,
       });
 
       onProfileUpdated?.({ name: updated.name, email: updated.email, avatar: updated.photo_url });
@@ -367,6 +397,34 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 <label className="barber-field"><span>Skidka (%)</span>
                   <input value={profDiscountPercent} onChange={(event) => setProfDiscountPercent(event.target.value)} placeholder="Masalan: 15" />
                 </label>
+                <label className="barber-field"><span>Manzil</span>
+                  <input value={profLocationAddress} onChange={(event) => setProfLocationAddress(event.target.value)} placeholder="Masalan: Buxoro, Mustaqillik ko'chasi 12" />
+                </label>
+                <div className="barber-form-row">
+                  <label className="barber-field"><span>Latitude</span>
+                    <input value={profLocationLat} onChange={(event) => setProfLocationLat(event.target.value)} placeholder="39.7678" />
+                  </label>
+                  <label className="barber-field"><span>Longitude</span>
+                    <input value={profLocationLng} onChange={(event) => setProfLocationLng(event.target.value)} placeholder="64.4554" />
+                  </label>
+                </div>
+                <div className="bp-map-preview-card">
+                  <div className="bp-list-head">
+                    <h4>Joylashuv preview</h4>
+                    <small>Qo'lda manzil yoki koordinata kiriting</small>
+                  </div>
+                  {mapPreviewUrl ? (
+                    <iframe
+                      title="Barber location preview"
+                      src={mapPreviewUrl}
+                      className="bp-map-preview"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  ) : (
+                    <div className="bp-empty">Manzil yoki koordinata kiritsangiz xarita shu yerda chiqadi.</div>
+                  )}
+                </div>
                 <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
                   <input type="password" value={profPassword} onChange={(event) => setProfPassword(event.target.value)} placeholder="Yangi parol" autoComplete="new-password" />
                 </label>

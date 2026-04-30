@@ -18,6 +18,7 @@ export interface LoginResponse {
   role: string;
   name: string;
   email: string;
+  phone?: string | null;
   avatar?: string | null;
 }
 
@@ -25,14 +26,36 @@ export interface AdminProfileApi {
   id: number;
   name: string;
   email: string;
+  phone?: string | null;
   avatar?: string | null;
 }
 
 export interface AdminProfileUpdatePayload {
   name: string;
   email: string;
+  phone?: string;
   password?: string;
   avatar?: string | null;
+}
+
+export interface PhoneOtpRequestPayload {
+  name?: string;
+  phone: string;
+}
+
+export interface PhoneOtpSendResponseApi {
+  success: boolean;
+  phone: string;
+  expires_in_seconds: number;
+  delivery_status: string;
+  debug_code?: string | null;
+  message?: string | null;
+}
+
+export interface PhoneOtpVerifyPayload {
+  name?: string;
+  phone: string;
+  code: string;
 }
 
 export interface BarberProfileUpdatePayload {
@@ -44,6 +67,9 @@ export interface BarberProfileUpdatePayload {
   work_directions?: string;
   service_price?: number;
   discount_percent?: number;
+  location_address?: string;
+  location_latitude?: number;
+  location_longitude?: number;
 }
 
 export interface BarberProfileApi {
@@ -55,6 +81,9 @@ export interface BarberProfileApi {
   work_directions?: string;
   service_price?: number;
   discount_percent?: number;
+  location_address?: string | null;
+  location_latitude?: number | null;
+  location_longitude?: number | null;
 }
 
 export interface BarberNotificationApi {
@@ -81,7 +110,8 @@ export interface BarberRatingResponseApi {
 
 export interface UserProfileUpdatePayload {
   name: string;
-  email: string;
+  email?: string;
+  phone?: string;
   password?: string;
   avatar?: string | null;
 }
@@ -89,7 +119,8 @@ export interface UserProfileUpdatePayload {
 export interface UserProfileApi {
   id: number;
   name: string;
-  email: string;
+  email?: string | null;
+  phone?: string | null;
   avatar?: string | null;
 }
 
@@ -135,6 +166,8 @@ export interface UserBookingBarberApi {
   distance_km?: number | null;
   barbershop_name?: string | null;
   barbershop_address?: string | null;
+  location_latitude?: number | null;
+  location_longitude?: number | null;
 }
 
 export interface PublicBarberPreviewApi {
@@ -343,6 +376,20 @@ export async function deleteBarber(barberId: number): Promise<void> {
 
 export async function loginUser(payload: LoginRequest): Promise<LoginResponse> {
   return requestJson<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function requestPhoneOtp(payload: PhoneOtpRequestPayload): Promise<PhoneOtpSendResponseApi> {
+  return requestJson<PhoneOtpSendResponseApi>("/auth/phone/request", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifyPhoneOtp(payload: PhoneOtpVerifyPayload): Promise<LoginResponse> {
+  return requestJson<LoginResponse>("/auth/phone/verify", {
     method: "POST",
     body: JSON.stringify(payload),
   });

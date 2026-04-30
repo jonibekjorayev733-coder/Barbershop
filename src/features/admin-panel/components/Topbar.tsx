@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { updateAdminProfile } from "../api";
+import { getAdminProfile, updateAdminProfile } from "../api";
 import { IBell, ISearch } from "../icons";
 import { emitProfileSync } from "../../../lib/profileSync";
 import { fileToOptimizedAvatarDataUrl } from "../../../lib/avatar";
@@ -22,6 +22,7 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [name, setName] = useState(adminName);
   const [email, setEmail] = useState(adminEmail);
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(adminAvatar ?? null);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,6 +34,28 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
     setEmail(adminEmail);
     setAvatarPreview(adminAvatar ?? null);
   }, [adminName, adminEmail, adminAvatar]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        const profile = await getAdminProfile(adminId);
+        if (!isMounted) {
+          return;
+        }
+        setPhone(profile.phone ?? "");
+      } catch {
+        if (isMounted) {
+          setPhone("");
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [adminId]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -77,9 +100,11 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
       const updated = await updateAdminProfile(adminId, {
         name: trimmedName,
         email: trimmedEmail,
+        phone: phone.trim() || undefined,
         password: trimmedPassword || undefined,
         avatar: avatarPreview || undefined,
       });
+      setPhone(updated.phone ?? "");
       onProfileUpdated({ name: updated.name, email: updated.email, avatar: updated.avatar });
       emitProfileSync({ entityType: "admin", entityId: adminId, name: updated.name, email: updated.email, avatar: updated.avatar });
       setIsProfileOpen(false);
@@ -183,6 +208,16 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="admin@example.com"
+                />
+              </label>
+
+              <label className="barber-field">
+                <span>Telefon</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="998901234567"
                 />
               </label>
 

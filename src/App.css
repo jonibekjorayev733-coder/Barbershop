@@ -1480,6 +1480,7 @@ body::before {
     gap: 12px;
   }
 
+  .login-method-tabs,
   .login-mode-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1487,6 +1488,7 @@ body::before {
     margin-bottom: 12px;
   }
 
+  .login-method-tabs button,
   .login-mode-tabs button {
     min-height: 40px;
     border-radius: 10px;
@@ -1497,6 +1499,7 @@ body::before {
     font-weight: 700;
   }
 
+  .login-method-tabs button.active,
   .login-mode-tabs button.active {
     background: rgba(59, 130, 246, 0.18);
     color: #dbeafe;
@@ -1541,6 +1544,19 @@ body::before {
     font-size: 14px;
   }
 
+  .login-secondary-btn {
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    background: rgba(59, 130, 246, 0.08);
+    color: #dbeafe;
+    font-weight: 700;
+  }
+
+  .location-gate-card {
+    width: min(520px, 100%);
+  }
+
   .login-error {
     border: 1px solid rgba(239, 68, 68, 0.25);
     background: rgba(239, 68, 68, 0.12);
@@ -1563,6 +1579,21 @@ body::before {
   .bp-shell {
     min-height: 100vh;
     padding: 24px;
+  }
+
+  .bp-map-preview-card {
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .bp-map-preview {
+    width: 100%;
+    height: 260px;
+    border: 0;
+    border-radius: 14px;
+    margin-top: 10px;
   }
 
   .bp-wrap {

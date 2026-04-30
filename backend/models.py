@@ -20,6 +20,7 @@ class Admin(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     name = Column(String)
+    phone = Column(String, nullable=True, index=True)
     avatar = Column(String, nullable=True)
     role = Column(String, default="admin")
 
@@ -62,6 +63,9 @@ class Barber(Base):
     service_price = Column(Float, default=40000)
     discount_percent = Column(Float, default=0)
     barbershop_id = Column(Integer, ForeignKey("barbershop.id"), nullable=True, index=True)
+    location_address = Column(String, nullable=True)
+    location_latitude = Column(Float, nullable=True)
+    location_longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=tashkent_now)
     updated_at = Column(DateTime, default=tashkent_now, onupdate=tashkent_now)
 

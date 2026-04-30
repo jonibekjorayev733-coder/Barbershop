@@ -145,17 +145,17 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const handleProfileSave = async () => {
     const trimName = profName.trim();
     const trimEmail = profEmail.trim().toLowerCase();
-    if (!trimName || !trimEmail) { showProfileToast("error", "Ism va emailni to'ldiring."); return; }
+    if (!trimName) { showProfileToast("error", "Ismni to'ldiring."); return; }
     try {
       setIsSaving(true);
       const updated = await updateStudentProfile(userId, {
         name: trimName,
-        email: trimEmail,
+        email: trimEmail || undefined,
         password: profPassword.trim() || undefined,
         avatar: avatarPreview || undefined,
       });
-      onProfileUpdated?.({ name: updated.name, email: updated.email, avatar: updated.avatar });
-      emitProfileSync({ entityType: "user", entityId: userId, name: updated.name, email: updated.email, avatar: updated.avatar });
+      onProfileUpdated?.({ name: updated.name, email: updated.email ?? "", avatar: updated.avatar });
+      emitProfileSync({ entityType: "user", entityId: userId, name: updated.name, email: updated.email ?? "", avatar: updated.avatar });
       setProfPassword("");
       showProfileToast("success", "Profil muvaffaqiyatli saqlandi.");
     } catch (err) {
@@ -502,6 +502,25 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
     }
   };
 
+  const openDirectionsToBarber = () => {
+    if (!selectedBarber) {
+      return;
+    }
+
+    const params = new URLSearchParams({ api: "1", travelmode: "driving" });
+    if (userCoords) {
+      params.set("origin", `${userCoords.lat},${userCoords.lng}`);
+    }
+
+    if (typeof selectedBarber.location_latitude === "number" && typeof selectedBarber.location_longitude === "number") {
+      params.set("destination", `${selectedBarber.location_latitude},${selectedBarber.location_longitude}`);
+    } else {
+      params.set("destination", selectedBarber.barbershop_address || selectedBarber.barbershop_name || selectedBarber.name);
+    }
+
+    window.open(`https://www.google.com/maps/dir/?${params.toString()}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="ub-shell">
       {profileToast ? <div className={`ba-toast ba-toast-${profileToast.type}`}>{profileToast.message}</div> : null}
@@ -719,7 +738,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
               {/* Barber detail */}
               {step === "barber-detail" && selectedBarber ? (
                 <section className="ub-card ub-barber-detail-card">
-                  <button className="ub-back-btn" onClick={() => setStep("barbers")}>← Orqaga</button>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                    <button className="ub-back-btn" onClick={() => setStep("barbers")}>← Orqaga</button>
+                    <button className="ub-back-btn" onClick={openDirectionsToBarber}>📍 Sartaroshga borish</button>
+                  </div>
                   <div className="ub-bd-hero">
                     {selectedBarber.photo_url ? (
                       <img src={selectedBarber.photo_url} alt={selectedBarber.name} className="ub-bd-avatar" />
@@ -754,6 +776,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                     <div className="ub-bd-section-title">XIZMAT MA'LUMOTI</div>
                     <div className="ub-bd-info-row"><FiScissors /><span>Yo'nalish:</span><strong>{selectedBarber.specialty}</strong></div>
                     <div className="ub-bd-info-row"><FiStar /><span>Narx:</span><strong>{formatPrice(selectedBarber.service_price)}</strong></div>
+                    <div className="ub-bd-info-row"><FiMapPin /><span>Manzil:</span><strong>{selectedBarber.barbershop_address || selectedBarber.barbershop_name || "Kiritilmagan"}</strong></div>
                     {selectedBarber.phone && (
                       <div className="ub-bd-info-row"><FiShield /><span>Telefon:</span><strong>{selectedBarber.phone}</strong></div>
                     )}

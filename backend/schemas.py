@@ -5,18 +5,21 @@ from datetime import datetime
 class AdminBase(BaseModel):
     email: str
     name: str
+    phone: Optional[str] = None
     avatar: Optional[str] = None
 
 class AdminCreate(BaseModel):
     email: str
     password: str
     name: str
+    phone: Optional[str] = None
     avatar: Optional[str] = None
 
 
 class AdminUpdate(BaseModel):
     email: str
     name: str
+    phone: Optional[str] = None
     password: Optional[str] = None
     avatar: Optional[str] = None
 
@@ -34,6 +37,9 @@ class BarberProfileUpdate(BaseModel):
     work_directions: Optional[str] = None
     service_price: Optional[float] = None
     discount_percent: Optional[float] = None
+    location_address: Optional[str] = None
+    location_latitude: Optional[float] = None
+    location_longitude: Optional[float] = None
 
 
 class BarberProfile(BaseModel):
@@ -45,6 +51,9 @@ class BarberProfile(BaseModel):
     work_directions: Optional[str] = None
     service_price: Optional[float] = None
     discount_percent: Optional[float] = None
+    location_address: Optional[str] = None
+    location_latitude: Optional[float] = None
+    location_longitude: Optional[float] = None
     class Config: from_attributes = True
 
 class TeacherBase(BaseModel):
@@ -154,6 +163,8 @@ class UserBookingBarber(BaseModel):
     distance_km: Optional[float] = None
     barbershop_name: Optional[str] = None
     barbershop_address: Optional[str] = None
+    location_latitude: Optional[float] = None
+    location_longitude: Optional[float] = None
 
 
 class PublicBarberPreview(BaseModel):
@@ -303,7 +314,8 @@ class Student(StudentBase):
 
 class StudentProfileUpdate(BaseModel):
     name: str
-    email: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
     password: Optional[str] = None
     avatar: Optional[str] = None
 
@@ -311,7 +323,8 @@ class StudentProfileUpdate(BaseModel):
 class StudentProfile(BaseModel):
     id: int
     name: str
-    email: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
     avatar: Optional[str] = None
     class Config: from_attributes = True
 
@@ -567,4 +580,25 @@ class LoginResponse(BaseModel):
     role: str
     name: str
     email: str
+    phone: Optional[str] = None
     avatar: Optional[str] = None
+
+
+class PhoneOtpRequest(BaseModel):
+    name: Optional[str] = None
+    phone: str
+
+
+class PhoneOtpSendResponse(BaseModel):
+    success: bool = True
+    phone: str
+    expires_in_seconds: int
+    delivery_status: str
+    debug_code: Optional[str] = None
+    message: Optional[str] = None
+
+
+class PhoneOtpVerifyRequest(BaseModel):
+    name: Optional[str] = None
+    phone: str
+    code: str
