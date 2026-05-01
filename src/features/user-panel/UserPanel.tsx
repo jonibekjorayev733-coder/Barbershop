@@ -581,14 +581,14 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
             onClick={() => setView("booking")}
           >
             <FiCalendar />
-            <span>Bron qilish</span>
+            <span className="ub-nav-label">Bron</span>
           </button>
           <button
             className={`ub-left-btn ${view === "profile" ? "active" : ""}`}
             onClick={() => setView("profile")}
           >
             <FiShield />
-            <span>Profil</span>
+            <span className="ub-nav-label">Profil</span>
           </button>
 
           <div className="ub-side-profile-card">

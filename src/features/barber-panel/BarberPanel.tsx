@@ -465,19 +465,19 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
           <nav className="bp-sidebar-nav">
             <button className={`bp-sidebar-item ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
               <FiScissors />
-              <span>Boshqaruv</span>
+              <span className="bp-nav-label">Boshqaruv</span>
             </button>
             <button className={`bp-sidebar-item ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}>
               <FiCalendar />
-              <span>Jadval</span>
+              <span className="bp-nav-label">Jadval</span>
             </button>
             <button className={`bp-sidebar-item ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}>
               <FiSettings />
-              <span>Profil</span>
+              <span className="bp-nav-label">Profil</span>
             </button>
             <button className={`bp-sidebar-item ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>
               <FiBell />
-              <span>Habarnomalar</span>
+              <span className="bp-nav-label">Xabarlar</span>
             </button>
           </nav>
         </div>
