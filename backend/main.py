@@ -1936,6 +1936,27 @@ def ensure_legacy_schema_compatibility():
         )
         """,
         """
+        ALTER TABLE barber_appointment
+            ADD COLUMN IF NOT EXISTS student_id INTEGER NULL REFERENCES student(id) ON DELETE SET NULL,
+            ADD COLUMN IF NOT EXISTS user_rating INTEGER NULL,
+            ADD COLUMN IF NOT EXISTS user_rated_at TIMESTAMP NULL
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS user_notification (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            notification_type VARCHAR NOT NULL,
+            title VARCHAR NOT NULL,
+            message TEXT NOT NULL,
+            barber_id INTEGER NULL,
+            appointment_id INTEGER NULL,
+            sms_sent BOOLEAN DEFAULT FALSE,
+            voice_sent BOOLEAN DEFAULT FALSE,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+        """,
+        """
         CREATE TABLE IF NOT EXISTS phone_otp_auth (
             id SERIAL PRIMARY KEY,
             phone VARCHAR NOT NULL,
@@ -2046,6 +2067,7 @@ async def startup_schema_compatibility():
         models.Barbershop.__table__.create(bind=engine, checkfirst=True)
         models.Barber.__table__.create(bind=engine, checkfirst=True)
         models.BarberAppointment.__table__.create(bind=engine, checkfirst=True)
+        models.UserNotification.__table__.create(bind=engine, checkfirst=True)
     except Exception as startup_error:
         print(f"Warning: auth/barber table init failed: {startup_error}")
 
