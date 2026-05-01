@@ -7014,6 +7014,137 @@ a.bp-all-link {
   }
 }
 
+/* ── 6.5. Ultra-narrow phone user panel (≤380px) ── */
+@media (max-width: 380px) {
+  .ub-shell {
+    padding: 6px !important;
+  }
+
+  .ub-left-menu {
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .ub-side-brand,
+  .ub-side-profile-card {
+    display: none !important;
+  }
+
+  .ub-left-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    gap: 4px !important;
+  }
+
+  .ub-left-menu .ub-left-btn {
+    flex-shrink: 0 !important;
+    min-width: 80px !important;
+    font-size: 11px !important;
+    padding: 8px 8px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  .ub-left-menu .ub-left-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .ub-page-head {
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .ub-page-title {
+    font-size: 18px !important;
+  }
+
+  .ub-head-actions,
+  .ub-detail-toolbar {
+    gap: 6px !important;
+  }
+
+  .ub-head-chip {
+    font-size: 10px !important;
+    padding: 0 8px !important;
+    min-height: 30px !important;
+  }
+
+  .ub-kpi-item {
+    min-height: 70px !important;
+    padding: 10px !important;
+  }
+
+  .ub-kpi-item strong {
+    font-size: clamp(24px, 7vw, 32px) !important;
+  }
+
+  .ub-process-step {
+    min-width: 100px !important;
+    min-height: 50px !important;
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .ub-barber-row {
+    min-height: 70px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .ub-barber-avatar {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .ub-go {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .ub-slots-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .ub-slot {
+    min-height: 38px !important;
+    font-size: 11px !important;
+  }
+
+  .ub-detail-toolbar {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .ub-detail-toolbar > * {
+    font-size: 13px !important;
+    padding: 10px !important;
+    min-height: 40px !important;
+  }
+
+  .ub-bd-stats {
+    gap: 6px !important;
+  }
+
+  .ub-bd-stat {
+    min-height: 70px !important;
+    padding: 10px !important;
+  }
+
+  .ub-bd-stat strong {
+    font-size: 20px !important;
+  }
+
+  /* Prevent any overflow */
+  .ub-shell,
+  .ub-shell > * {
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+}
+
 /* ── 7. Login page mobile ── */
 @media (max-width: 480px) {
   .login-shell {
@@ -7108,5 +7239,123 @@ a.bp-all-link {
   .login-method-tabs-3 button {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+  }
+}
+
+/* ── 11. Ultra-narrow phone (380px and below) ── */
+@media (max-width: 380px) {
+  .bp-shell {
+    padding: 0 !important;
+  }
+
+  .bp-sidebar {
+    padding: 0 !important;
+    border-bottom-width: 0 !important;
+  }
+
+  .bp-sidebar-brand {
+    padding: 12px 12px 10px !important;
+    border-bottom-width: 0 !important;
+  }
+
+  .bp-sidebar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    padding: 8px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid rgba(96, 165, 250, 0.1) !important;
+    scrollbar-width: none !important;
+  }
+
+  .bp-sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bp-sidebar-item {
+    flex-shrink: 0 !important;
+    min-width: 90px !important;
+    font-size: 11px !important;
+    padding: 8px 10px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+
+  .bp-sidebar-item svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .bp-sidebar-footer {
+    display: none !important;
+  }
+
+  .bp-topbar {
+    padding: 8px 12px !important;
+    min-height: 56px !important;
+    height: auto !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .bp-topbar-left {
+    width: 100% !important;
+    gap: 2px !important;
+  }
+
+  .bp-topbar-title {
+    font-size: 10px !important;
+  }
+
+  .bp-topbar-heading {
+    font-size: 18px !important;
+  }
+
+  .bp-topbar-right {
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 4px !important;
+  }
+
+  .bp-topbar-chip,
+  .bp-topbar-logout {
+    font-size: 10px !important;
+    padding: 6px 8px !important;
+    min-height: 32px !important;
+  }
+
+  .bp-content {
+    padding: 10px !important;
+  }
+
+  .bp-wrap {
+    padding: 12px !important;
+  }
+
+  .bp-stat {
+    min-height: 80px !important;
+    padding: 12px !important;
+  }
+
+  .bp-stat strong {
+    font-size: clamp(24px, 8vw, 32px) !important;
+  }
+
+  .bp-stat span {
+    font-size: 10px !important;
+  }
+
+  /* Ensure no horizontal overflow */
+  .bp-shell,
+  .bp-shell > * {
+    width: 100% !important;
+    overflow-x: hidden !important;
   }
 }
