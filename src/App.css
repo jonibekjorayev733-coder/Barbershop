@@ -6733,3 +6733,380 @@ a.bp-all-link {
     padding: 10px !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVE — USER PANEL + BARBER PANEL
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Panel grid: single column on all tablets/phones ── */
+@media (max-width: 900px) {
+  .ub-panel-grid,
+  .bp-panel-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .ub-shell,
+  .bp-shell {
+    padding: 12px !important;
+    min-height: 100svh;
+  }
+}
+
+/* ── 2. Mobile sidebar → compact horizontal scrollable nav strip ── */
+@media (max-width: 900px) {
+  .ub-left-menu,
+  .bp-left-menu {
+    position: static !important;
+    padding: 12px 10px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  /* Brand row stays full width */
+  .ub-side-brand,
+  .bp-side-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Nav buttons become a horizontal scrollable strip */
+  .ub-side-section-title,
+  .bp-side-section-title {
+    display: none !important;
+  }
+
+  /* Wrap all left-btn elements into a flex row */
+  .ub-left-menu > .ub-left-btn,
+  .bp-left-menu > .bp-left-btn {
+    /* individual buttons — handled by parent flex column, fine as-is */
+  }
+
+  /* Profile card goes below nav */
+  .ub-side-profile-card,
+  .bp-side-profile-card {
+    margin-top: 0 !important;
+  }
+}
+
+/* ── 3. Nav buttons: horizontal scrollable row on small screens ── */
+@media (max-width: 900px) {
+  /* Wrap buttons section in a scroll row */
+  .ub-left-menu {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* All left-btn in a horizontal scroll strip */
+  .ub-left-menu .ub-left-btn,
+  .bp-left-menu .bp-left-btn {
+    height: 44px !important;
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    padding: 0 14px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+/* ── 4. On phones: nav becomes a 2-column grid ── */
+@media (max-width: 600px) {
+  .ub-left-menu,
+  .bp-left-menu {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 6px !important;
+    padding: 10px !important;
+  }
+
+  .ub-side-brand,
+  .bp-side-brand {
+    grid-column: 1 / -1 !important;
+  }
+
+  .ub-side-profile-card,
+  .bp-side-profile-card {
+    grid-column: 1 / -1 !important;
+    margin-top: 0 !important;
+  }
+
+  .ub-left-btn,
+  .bp-left-btn {
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 0 8px !important;
+    font-size: 12.5px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+  }
+
+  /* hide icon text, show icon only on very small screens — keep text on 600px */
+}
+
+/* ── 5. Main panel content fixes ── */
+@media (max-width: 768px) {
+  .ub-page-head,
+  .bp-head {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .ub-page-title {
+    font-size: clamp(20px, 5vw, 28px) !important;
+  }
+
+  .ub-head-actions,
+  .bp-head-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .ub-head-chip,
+  .bp-head-chip {
+    font-size: 11px !important;
+    padding: 0 10px !important;
+    min-height: 34px !important;
+  }
+
+  /* KPI grid: 2-col on tablet, 1-col on phone */
+  .ub-kpi-grid,
+  .bp-stats {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .ub-kpi-item,
+  .bp-stat {
+    min-height: 110px !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .ub-kpi-item strong,
+  .bp-stat strong {
+    font-size: clamp(32px, 8vw, 42px) !important;
+  }
+
+  /* Process steps: horizontal scroll */
+  .ub-process {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 10px !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: none !important;
+  }
+  .ub-process::-webkit-scrollbar { display: none; }
+
+  .ub-process-step {
+    flex-shrink: 0 !important;
+    min-width: 120px !important;
+    min-height: 60px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  /* Booking grid: always single column */
+  .ub-booking-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Barber rows: touch-friendly */
+  .ub-barber-row {
+    min-height: 80px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+    align-items: flex-start !important;
+  }
+
+  .ub-barber-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Slot grid */
+  .ub-slots-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .ub-slot {
+    min-height: 46px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Detail toolbar — full width buttons */
+  .ub-detail-toolbar {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .ub-detail-toolbar > * {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* BD stats */
+  .ub-bd-stats {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .ub-bd-stat {
+    min-height: 90px !important;
+    padding: 12px !important;
+  }
+}
+
+/* ── 6. Phone-only overrides (≤480px) ── */
+@media (max-width: 480px) {
+  .ub-shell,
+  .bp-shell {
+    padding: 8px !important;
+  }
+
+  .ub-kpi-grid,
+  .bp-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ub-kpi-item,
+  .bp-stat {
+    min-height: 90px !important;
+  }
+
+  .ub-slots-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+
+  .ub-bd-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ub-page-title {
+    font-size: 20px !important;
+  }
+
+  .ub-barbers-list-wrap,
+  .ub-barber-list {
+    gap: 8px !important;
+  }
+
+  .ub-barber-avatar {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .ub-go {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+/* ── 7. Login page mobile ── */
+@media (max-width: 480px) {
+  .login-shell {
+    padding: 12px !important;
+    align-items: flex-start !important;
+    padding-top: 24px !important;
+  }
+
+  .login-compact-card {
+    width: 100% !important;
+    padding: 20px 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .login-method-tabs-3 {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .login-method-tabs-3 button {
+    min-height: 46px !important;
+    font-size: 14px !important;
+  }
+
+  .login-btn {
+    min-height: 50px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* ── 8. Barber panel (bp-shell with sidebar) mobile ── */
+@media (max-width: 768px) {
+  .bp-shell {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100svh !important;
+    overflow: visible !important;
+  }
+
+  .bp-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(96, 165, 250, 0.15) !important;
+  }
+
+  .bp-sidebar-nav {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 6px !important;
+    padding: 10px !important;
+    overflow-x: visible !important;
+  }
+
+  .bp-content {
+    padding: 12px !important;
+  }
+
+  .bp-wrap {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ── 9. Prevent horizontal overflow globally ── */
+@media (max-width: 900px) {
+  .ub-shell *,
+  .bp-shell * {
+    max-width: 100%;
+    word-break: break-word;
+  }
+
+  /* prevent iframes / maps from overflowing */
+  iframe,
+  .bp-map-preview,
+  .location-picker-map,
+  .bp-location-picker-map {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* ── 10. Touch-action improvements ── */
+@media (max-width: 900px) {
+  .ub-left-btn,
+  .bp-left-btn,
+  .bp-sidebar-item,
+  .ub-barber-row,
+  .ub-slot,
+  .ub-detail-toolbar button,
+  .login-method-tabs-3 button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
