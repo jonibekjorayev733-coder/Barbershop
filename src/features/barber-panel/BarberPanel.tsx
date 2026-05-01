@@ -426,52 +426,72 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         ))}
       </div>
 
-      <div className="bp-panel-grid">
-        <aside className="bp-left-menu">
-          <div className="bp-side-brand">
-            <div className="bp-side-logo"><FiScissors /></div>
+      {/* Sidebar */}
+      <aside className="bp-sidebar">
+        <div className="bp-sidebar-top">
+          <div className="bp-sidebar-brand">
+            <div className="bp-sidebar-logo"><FiScissors /></div>
             <div>
-              <strong>SharpCuts</strong>
-              <span>Barber panel</span>
+              <strong className="bp-sidebar-name">SharpCuts</strong>
+              <span className="bp-sidebar-tag">Barber panel</span>
             </div>
           </div>
 
-          <div className="bp-side-section-title">Menyu</div>
-          <button className={`bp-left-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><FiScissors /><span>Boshqaruv</span></button>
-          <button className={`bp-left-btn ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}><FiCalendar /><span>Jadval</span></button>
-          <button className={`bp-left-btn ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}><FiSettings /><span>Profil</span></button>
-          <button className={`bp-left-btn ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}><FiBell /><span>Habarnomalar</span></button>
+          <nav className="bp-sidebar-nav">
+            <button className={`bp-sidebar-item ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
+              <FiScissors />
+              <span>Boshqaruv</span>
+            </button>
+            <button className={`bp-sidebar-item ${view === "schedule" ? "active" : ""}`} onClick={() => setView("schedule")}>
+              <FiCalendar />
+              <span>Jadval</span>
+            </button>
+            <button className={`bp-sidebar-item ${view === "profile" ? "active" : ""}`} onClick={() => setView("profile")}>
+              <FiSettings />
+              <span>Profil</span>
+            </button>
+            <button className={`bp-sidebar-item ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>
+              <FiBell />
+              <span>Habarnomalar</span>
+            </button>
+          </nav>
+        </div>
 
-          <div className="bp-side-profile-card">
-            <div className="bp-side-avatar-wrap">
-              {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-side-avatar" /> : <div className="bp-side-avatar bp-side-avatar-fallback">{initials}</div>}
+        <div className="bp-sidebar-footer">
+          <div className="bp-sidebar-profile">
+            <div className="bp-sidebar-avatar">
+              {currentAvatar ? <img src={currentAvatar} alt={barberName} /> : initials}
             </div>
-            <strong>{dashboard?.barber_name || barberName}</strong>
-            <span>{profSpecialty || "Professional barber"}</span>
-            <small>{profLocationAddress || "Lokatsiya hali kiritilmagan"}</small>
+            <div className="bp-sidebar-info">
+              <strong>{dashboard?.barber_name || barberName}</strong>
+              <span>{profSpecialty || "Professional"}</span>
+            </div>
           </div>
-        </aside>
+        </div>
+      </aside>
 
-        <div className="bp-main-panel">
-          <header className="bp-head">
-            <div className="bp-page-copy">
-              <div className="bp-greet">Bugungi holat</div>
-              <h2>{pageTitle}</h2>
-              <div className="bp-date">{pageSubtitle}</div>
-            </div>
-            <div className="bp-head-actions">
-              <div className="bp-head-chip">{humanDate}</div>
-              <div className="bp-head-chip bp-head-chip-soft">{dashboard?.today_total ?? 0} bron bugun</div>
-              <button type="button" className="bp-av-btn" onClick={() => setView("profile")} aria-label="Profil">
-                {currentAvatar ? <img src={currentAvatar} alt={barberName} className="bp-av-img" /> : <span className="bp-av-placeholder">{initials}</span>}
-              </button>
-              <button className="bp-logout" onClick={onLogout}>Chiqish</button>
-            </div>
-          </header>
+      {/* Main content */}
+      <div className="bp-main-wrap">
+        {/* Topbar */}
+        <header className="bp-topbar">
+          <div className="bp-topbar-left">
+            <span className="bp-topbar-title">Bugungi holat</span>
+            <h1 className="bp-topbar-heading">{pageTitle}</h1>
+          </div>
+          <div className="bp-topbar-right">
+            <span className="bp-topbar-chip">{humanDate}</span>
+            <span className="bp-topbar-chip">{dashboard?.today_total ?? 0} bron</span>
+            <button className="bp-topbar-logout" onClick={onLogout}>Chiqish</button>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="bp-content">
 
           {view === "profile" ? (
-            <section className="bp-wrap bp-profile-page">
-              <h3>Mening profilim</h3>
+            <section className="bp-content-section">
+              <div className="bp-wrap bp-profile-page">
+                <h3>Mening profilim</h3>
               <p className="bp-profile-sub">Profil, xizmat narxi va salon joylashuvini bir joydan boshqaring.</p>
 
               <div className="prof-avatar-section">
@@ -555,15 +575,17 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                   <button type="button" className="ba-pri" onClick={() => void handleProfileSave()} disabled={isSaving}>{isSaving ? "Saqlanmoqda..." : "Saqlash"}</button>
                 </div>
               </div>
+              </div>
             </section>
           ) : null}
 
           {view === "notifications" ? (
-            <section className="bp-wrap bp-notification-page">
-              <div className="bp-list-head">
-                <h4>Habarnomalar</h4>
-                <small>{notifications.length} ta</small>
-              </div>
+            <section className="bp-content-section">
+              <div className="bp-wrap bp-notification-page">
+                <div className="bp-list-head">
+                  <h4>Habarnomalar</h4>
+                  <small>{notifications.length} ta</small>
+                </div>
 
               <div className="bp-list">
                 {notifications.map((item) => (
@@ -591,12 +613,14 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 ))}
                 {notifications.length === 0 ? <div className="bp-empty">Hozircha habarnoma yo'q</div> : null}
               </div>
+              </div>
             </section>
           ) : null}
 
           {view === "dashboard" ? (
-            <section className="bp-wrap">
-              <div className="bp-dashboard-grid">
+            <section className="bp-content-section">
+              <div className="bp-wrap">
+                <div className="bp-dashboard-grid">
                 <div className="bp-main-col">
                   <div className="bp-stats">
                     <article className="bp-stat bp-stat-dark bp-stat-primary">
@@ -697,32 +721,34 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                   ))}
                 </div>
               </section>
+              </div>
             </section>
           ) : null}
 
           {view === "schedule" ? (
-            <section className="bp-wrap">
-              <div className="bp-day-block">
-                <strong>Bugun</strong>
-                <span>{humanDate}</span>
+            <section className="bp-content-section">
+              <div className="bp-wrap">
+                <div className="bp-day-block">
+                  <strong>Bugun</strong>
+                  <span>{humanDate}</span>
                 <div className="bp-day-meta">
                   <small>{dashboard?.today_pending ?? 0} kutilmoqda</small>
                   <small>{dashboard?.today_done ?? 0} tasdiqlangan</small>
                   <small>{dashboard?.today_total ?? 0} jami</small>
                 </div>
-              </div>
+                </div>
 
-              <div className="bp-filter-row">
-                <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
-                <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
-                <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
-              </div>
+                <div className="bp-filter-row">
+                  <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
+                  <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
+                  <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
+                </div>
 
-              <div className="bp-schedule-list">
-                {appointments.map((item) => (
-                  <article key={item.id} className="bp-schedule-item">
-                    <div className="bp-schedule-top">
-                      <strong>{item.client_name}</strong>
+                <div className="bp-schedule-list">
+                  {appointments.map((item) => (
+                    <article key={item.id} className="bp-schedule-item">
+                      <div className="bp-schedule-top">
+                        <strong>{item.client_name}</strong>
                       <span className={`bp-chip ${item.status === "completed" ? "done" : "pending"}`}>
                         {item.status === "completed" ? "Tasdiqlangan" : item.status === "cancelled" ? "Rad etilgan" : "Kutilmoqda"}
                       </span>
@@ -753,10 +779,11 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                   </article>
                 ))}
                 {appointments.length === 0 ? <div className="bp-empty">Bugunga bron yo'q</div> : null}
+                </div>
               </div>
             </section>
           ) : null}
-        </div>
+        </main>
       </div>
     </div>
   );

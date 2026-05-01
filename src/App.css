@@ -5915,3 +5915,292 @@ body::before {
 }
 
 /* END NUCLEAR OVERRIDE */
+
+/* ════════════════════ BARBER PANEL FULL LAYOUT ════════════════════ */
+.bp-shell {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.bp-sidebar {
+  background: rgba(6, 11, 20, 0.95);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  flex-shrink: 0;
+  backdrop-filter: blur(20px);
+  box-shadow: 4px 0 40px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.bp-sidebar-top {
+  flex: 1;
+  padding: 0 0 8px;
+  overflow-y: auto;
+}
+
+.bp-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bp-sidebar-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.bp-sidebar-logo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bp-sidebar-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.bp-sidebar-tag {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bp-sidebar-nav {
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bp-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text2);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.bp-sidebar-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.bp-sidebar-item.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+.bp-sidebar-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.bp-sidebar-footer {
+  padding: 20px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.bp-sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bp-sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bp-sidebar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bp-sidebar-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bp-sidebar-info strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bp-sidebar-info span {
+  display: block;
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.bp-main-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.bp-topbar {
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 72px;
+  flex-shrink: 0;
+  backdrop-filter: blur(20px);
+}
+
+.bp-topbar-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bp-topbar-title {
+  font-size: 13px;
+  color: var(--text3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bp-topbar-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.bp-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bp-topbar-chip {
+  padding: 8px 14px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.bp-topbar-logout {
+  padding: 8px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bp-topbar-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.bp-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.bp-content-section {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ════════════════════ BARBER PANEL RESPONSIVE ════════════════════ */
+@media (max-width: 1200px) {
+  .bp-sidebar {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bp-shell {
+    flex-direction: column;
+  }
+
+  .bp-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .bp-main-wrap {
+    flex: 1;
+  }
+
+  .bp-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    height: auto;
+    padding: 16px;
+  }
+
+  .bp-topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
