@@ -147,6 +147,8 @@ default_allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://kursboshqaruvi-frontend.onrender.com",
+    "https://barbershop-1-gvrz.onrender.com",  # Frontend Render URL
+    "https://barbershop-q8eb.onrender.com",    # Backend Render URL
 ]
 
 env_allowed_origins_raw = os.getenv("CORS_ORIGINS", "")
