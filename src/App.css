@@ -7359,3 +7359,415 @@ a.bp-all-link {
     overflow-x: hidden !important;
   }
 }
+
+  /* =========================================================
+     UNIFIED RESPONSIVE LAYER (DESKTOP → TABLET → MOBILE APP)
+     ========================================================= */
+
+  /* Large tablets / small laptops */
+  @media (max-width: 1280px) {
+    .ub-shell,
+    .bp-shell {
+      padding: 16px !important;
+    }
+
+    .ub-panel-grid,
+    .bp-panel-grid {
+      gap: 20px !important;
+      grid-template-columns: 220px minmax(0, 1fr) !important;
+    }
+
+    .ub-page-head,
+    .bp-head,
+    .ub-card,
+    .bp-wrap {
+      border-radius: 18px !important;
+    }
+
+    .ub-kpi-item,
+    .bp-stat {
+      min-height: 124px !important;
+    }
+  }
+
+  /* Tablets */
+  @media (max-width: 1024px) {
+    .ub-panel-grid,
+    .bp-panel-grid {
+      grid-template-columns: 1fr !important;
+      gap: 14px !important;
+    }
+
+    .ub-left-menu,
+    .bp-left-menu {
+      position: static !important;
+      top: auto !important;
+      padding: 12px !important;
+      border-radius: 16px !important;
+    }
+
+    .ub-left-menu {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+    }
+
+    .ub-side-brand,
+    .ub-side-profile-card,
+    .ub-side-section-title {
+      grid-column: 1 / -1 !important;
+    }
+
+    .ub-left-btn {
+      min-height: 44px !important;
+      justify-content: center !important;
+    }
+
+    .bp-topbar {
+      height: auto !important;
+      min-height: 64px !important;
+      padding: 12px 14px !important;
+    }
+
+    .bp-topbar-right {
+      width: 100% !important;
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 6px !important;
+    }
+
+    .bp-topbar-chip,
+    .bp-topbar-logout {
+      width: 100% !important;
+      justify-content: center !important;
+      text-align: center !important;
+    }
+
+    .ub-kpi-grid,
+    .bp-stats,
+    .ub-bd-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+    }
+
+    .ub-booking-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  /* Phones: app-like layout with bottom navigation */
+  @media (max-width: 768px) {
+    .ub-shell,
+    .bp-shell {
+      padding: 10px !important;
+      min-height: 100svh !important;
+    }
+
+    .ub-page-head,
+    .bp-head,
+    .ub-card,
+    .bp-wrap {
+      padding: 14px !important;
+      border-radius: 14px !important;
+    }
+
+    .ub-page-title,
+    .bp-topbar-heading {
+      font-size: clamp(20px, 5vw, 26px) !important;
+      line-height: 1.15 !important;
+    }
+
+    .ub-head-actions,
+    .bp-head-actions,
+    .ub-detail-toolbar {
+      width: 100% !important;
+      justify-content: flex-start !important;
+      gap: 6px !important;
+    }
+
+    .ub-head-chip,
+    .bp-head-chip {
+      min-height: 32px !important;
+      font-size: 11px !important;
+      padding: 0 10px !important;
+    }
+
+    .ub-kpi-grid,
+    .bp-stats,
+    .ub-bd-stats {
+      grid-template-columns: 1fr !important;
+    }
+
+    .ub-kpi-item,
+    .bp-stat,
+    .ub-bd-stat {
+      min-height: 92px !important;
+      padding: 12px !important;
+    }
+
+    .ub-kpi-item strong,
+    .bp-stat strong {
+      font-size: clamp(28px, 8vw, 38px) !important;
+    }
+
+    .ub-process {
+      display: flex !important;
+      gap: 8px !important;
+      overflow-x: auto !important;
+      padding-bottom: 2px !important;
+      scrollbar-width: none !important;
+    }
+
+    .ub-process::-webkit-scrollbar {
+      display: none;
+    }
+
+    .ub-process-step {
+      flex-shrink: 0 !important;
+      min-width: 110px !important;
+      min-height: 56px !important;
+      padding: 10px !important;
+    }
+
+    .ub-barber-row {
+      min-height: 78px !important;
+      padding: 10px !important;
+      border-radius: 12px !important;
+    }
+
+    .ub-barber-avatar {
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 12px !important;
+    }
+
+    .ub-slots-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+    }
+
+    .ub-slot {
+      min-height: 42px !important;
+      border-radius: 10px !important;
+      font-size: 12px !important;
+    }
+
+    .ub-detail-toolbar {
+      flex-direction: column !important;
+    }
+
+    .ub-detail-toolbar > * {
+      width: 100% !important;
+      justify-content: center !important;
+      text-align: center !important;
+    }
+
+    .bp-topbar {
+      padding: 10px 12px !important;
+      gap: 8px !important;
+    }
+
+    .bp-topbar-right {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .bp-content {
+      padding: 10px !important;
+    }
+
+    .bp-wrap {
+      padding: 12px !important;
+    }
+
+    /* USER PANEL bottom nav */
+    .ub-left-menu {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 120 !important;
+      margin: 0 !important;
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+      border-radius: 16px 16px 0 0 !important;
+      border-left: 0 !important;
+      border-right: 0 !important;
+      border-bottom: 0 !important;
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 6px !important;
+      backdrop-filter: blur(18px) !important;
+    }
+
+    .ub-side-brand,
+    .ub-side-section-title,
+    .ub-side-profile-card {
+      display: none !important;
+    }
+
+    .ub-left-btn {
+      min-height: 46px !important;
+      border-radius: 12px !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      font-size: 12px !important;
+    }
+
+    .ub-main-panel {
+      padding-bottom: calc(94px + env(safe-area-inset-bottom)) !important;
+    }
+
+    /* BARBER PANEL bottom nav */
+    .bp-shell {
+      display: block !important;
+      padding-bottom: calc(86px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .bp-sidebar {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      top: auto !important;
+      width: 100% !important;
+      height: auto !important;
+      z-index: 130 !important;
+      border-right: 0 !important;
+      border-bottom: 0 !important;
+      border-top: 1px solid rgba(96, 165, 250, 0.22) !important;
+      border-radius: 16px 16px 0 0 !important;
+      box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28) !important;
+    }
+
+    .bp-sidebar-top {
+      padding: 0 !important;
+    }
+
+    .bp-sidebar-brand,
+    .bp-sidebar-footer {
+      display: none !important;
+    }
+
+    .bp-sidebar-nav {
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+      margin: 0 !important;
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 6px !important;
+    }
+
+    .bp-sidebar-item {
+      min-height: 46px !important;
+      padding: 8px 6px !important;
+      border-radius: 12px !important;
+      justify-content: center !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      font-size: 10px !important;
+    }
+
+    .bp-sidebar-item svg {
+      width: 15px !important;
+      height: 15px !important;
+    }
+
+    .bp-main-wrap {
+      padding-bottom: 0 !important;
+    }
+  }
+
+  /* Small phones */
+  @media (max-width: 480px) {
+    .ub-shell,
+    .bp-shell {
+      padding: 8px !important;
+    }
+
+    .ub-page-head,
+    .ub-card,
+    .bp-wrap {
+      padding: 12px !important;
+    }
+
+    .ub-page-title,
+    .bp-topbar-heading {
+      font-size: 19px !important;
+    }
+
+    .ub-left-btn span {
+      font-size: 11px !important;
+    }
+
+    .bp-topbar-title {
+      font-size: 10px !important;
+    }
+
+    .bp-topbar-right {
+      gap: 4px !important;
+    }
+
+    .bp-topbar-chip,
+    .bp-topbar-logout {
+      min-height: 30px !important;
+      font-size: 10px !important;
+      padding: 6px !important;
+    }
+
+    .login-shell {
+      padding: 10px !important;
+      align-items: flex-start !important;
+    }
+
+    .login-compact-card {
+      width: 100% !important;
+      padding: 16px 12px !important;
+      border-radius: 16px !important;
+    }
+
+    .login-method-tabs-3 {
+      grid-template-columns: 1fr !important;
+      gap: 6px !important;
+    }
+
+    .login-method-tabs-3 button,
+    .login-btn,
+    .login-secondary-btn {
+      min-height: 46px !important;
+      font-size: 14px !important;
+    }
+  }
+
+  /* Ultra small phones */
+  @media (max-width: 360px) {
+    .ub-left-btn {
+      min-height: 42px !important;
+      padding: 6px !important;
+    }
+
+    .ub-left-btn span {
+      font-size: 10px !important;
+    }
+
+    .bp-sidebar-nav {
+      gap: 4px !important;
+      padding: 6px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .bp-sidebar-item {
+      min-height: 42px !important;
+      font-size: 9.5px !important;
+      gap: 3px !important;
+    }
+
+    .bp-sidebar-item svg {
+      width: 14px !important;
+      height: 14px !important;
+    }
+
+    .ub-main-panel {
+      padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .bp-shell {
+      padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+    }
+  }
