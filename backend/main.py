@@ -2767,6 +2767,19 @@ def create_barber(barber: schemas.BarberCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_barber)
     seed_barber_appointments_if_empty(db, db_barber)
+
+    schedule_realtime(
+        "bookings",
+        "barber.admin.created",
+        {
+            "barber_id": db_barber.id,
+            "name": db_barber.name,
+            "specialty": db_barber.specialty,
+            "status": db_barber.status,
+            "photo_url": db_barber.photo_url,
+        },
+    )
+
     return db_barber
 
 
@@ -2810,6 +2823,32 @@ def update_barber(barber_id: int, barber: schemas.BarberUpdate, db: Session = De
 
     db.commit()
     db.refresh(db_barber)
+
+    schedule_realtime(
+        "bookings",
+        "barber.admin.updated",
+        {
+            "barber_id": db_barber.id,
+            "name": db_barber.name,
+            "specialty": db_barber.specialty,
+            "status": db_barber.status,
+            "photo_url": db_barber.photo_url,
+            "years_experience": db_barber.years_experience,
+        },
+    )
+
+    schedule_realtime(
+        f"barber:{db_barber.id}",
+        "barber.admin.updated",
+        {
+            "barber_id": db_barber.id,
+            "name": db_barber.name,
+            "specialty": db_barber.specialty,
+            "status": db_barber.status,
+            "photo_url": db_barber.photo_url,
+        },
+    )
+
     return db_barber
 
 
@@ -2962,6 +3001,13 @@ def delete_barber(barber_id: int, db: Session = Depends(get_db)):
     if db_barber is None:
         raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
 
+    deleted_payload = {
+        "barber_id": db_barber.id,
+        "name": db_barber.name,
+        "specialty": db_barber.specialty,
+        "status": "deleted",
+    }
+
     try:
         db.query(models.BarberAppointment).filter(models.BarberAppointment.barber_id == barber_id).delete(
             synchronize_session=False
@@ -2971,6 +3017,8 @@ def delete_barber(barber_id: int, db: Session = Depends(get_db)):
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=500, detail="Sartaroshni o'chirishda server xatoligi")
+
+    schedule_realtime("bookings", "barber.admin.deleted", deleted_payload)
 
     return {"message": "deleted"}
 

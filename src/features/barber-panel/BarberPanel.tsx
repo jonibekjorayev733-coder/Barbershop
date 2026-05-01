@@ -223,6 +223,10 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
         }
       }
 
+      if (payload.event === "barber.profile.updated" || payload.event === "barber.admin.updated") {
+        void loadProfile().catch(() => undefined);
+      }
+
       void Promise.all([loadDashboard(), loadAppointments(filter)]).catch(() => undefined);
     });
 

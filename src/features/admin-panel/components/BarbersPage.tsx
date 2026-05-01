@@ -169,7 +169,7 @@ export function BarbersPage() {
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
-      if (!["barber.profile.updated", "barber.rating.updated", "booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
+      if (!["barber.profile.updated", "barber.rating.updated", "barber.admin.created", "barber.admin.updated", "barber.admin.deleted", "booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
         return;
       }
 

@@ -259,13 +259,29 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
-      if (payload.event === "barber.profile.updated" || payload.event === "barber.rating.updated") {
+      if (
+        payload.event === "barber.profile.updated"
+        || payload.event === "barber.rating.updated"
+        || payload.event === "barber.admin.created"
+        || payload.event === "barber.admin.updated"
+        || payload.event === "barber.admin.deleted"
+      ) {
         void (async () => {
           try {
             const rows = userCoords
               ? await getUserBookingBarbers({ lat: userCoords.lat, lng: userCoords.lng, maxDistanceKm: 10, nearOnly: true })
               : await getUserBookingBarbers();
             setBarbers(rows);
+
+            if (payload.event === "barber.admin.deleted") {
+              const eventData = payload.data as { barber_id?: number };
+              if (selectedBarber && eventData.barber_id === selectedBarber.id) {
+                setSelectedBarber(null);
+                setStep("barbers");
+                setAvailability(null);
+                setSelectedTime("");
+              }
+            }
           } catch {
             return;
           }
