@@ -3301,30 +3301,36 @@ def assign_barber_to_barbershop(
 
 @app.get("/user/barbers/{barber_id}/availability", response_model=schemas.BarberAvailabilityResponse)
 def get_user_barber_availability(barber_id: int, date: Optional[str] = None, db: Session = Depends(get_db)):
-    db_barber = db.query(models.Barber).filter(models.Barber.id == barber_id).first()
-    if db_barber is None:
-        raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
+    try:
+        db_barber = db.query(models.Barber).filter(models.Barber.id == barber_id).first()
+        if db_barber is None:
+            raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
 
-    target_date = (date or today_tashkent_str()).strip()
-    if not target_date:
-        raise HTTPException(status_code=400, detail="Sana noto'g'ri")
+        target_date = (date or today_tashkent_str()).strip()
+        if not target_date:
+            raise HTTPException(status_code=400, detail="Sana noto'g'ri")
 
-    booked_rows = db.query(models.BarberAppointment).filter(
-        models.BarberAppointment.barber_id == barber_id,
-        models.BarberAppointment.appointment_date == target_date,
-        models.BarberAppointment.status.in_(["pending", "completed"]),
-    ).all()
-    booked_times = {item.appointment_time for item in booked_rows}
+        booked_rows = db.query(models.BarberAppointment).filter(
+            models.BarberAppointment.barber_id == barber_id,
+            models.BarberAppointment.appointment_date == target_date,
+            models.BarberAppointment.status.in_(["pending", "completed"]),
+        ).all()
+        booked_times = {item.appointment_time for item in booked_rows}
 
-    return {
-        "barber_id": db_barber.id,
-        "barber_name": db_barber.name,
-        "date": target_date,
-        "slots": [
-            {"time": slot, "status": "booked" if slot in booked_times else "available"}
-            for slot in BARBER_TIME_SLOTS
-        ],
-    }
+        return {
+            "barber_id": db_barber.id,
+            "barber_name": db_barber.name,
+            "date": target_date,
+            "slots": [
+                {"time": slot, "status": "booked" if slot in booked_times else "available"}
+                for slot in BARBER_TIME_SLOTS
+            ],
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[ERROR] get_user_barber_availability: {exc}")
+        raise HTTPException(status_code=500, detail=f"Xatolik: {str(exc)}")
 
 
 @app.post("/user/bookings", response_model=schemas.UserBookingConfirmation)
