@@ -5900,35 +5900,6 @@ body::before {
   }
 }
 
-/* 🔥🔥🔥 NUCLEAR LIGHT THEME OVERRIDE — BARBER/USER PANELS ONLY 🔥🔥🔥 */
-/* This must be LAST to override all previous dark definitions */
-
-.bp-shell,
-.ub-shell {
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%) !important;
-  color: #111827 !important;
-}
-
-.bp-shell *,
-.ub-shell * {
-  color: #111827 !important;
-  background-color: transparent !important;
-}
-
-.bp-wrap, .bp-stat, .bp-card, .bp-item, .bp-next-card, .bp-progress-card,
-.ub-card, .ub-page-head, .ub-shell-details, .ub-shell-success {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e5e7eb !important;
-  color: #111827 !important;
-}
-
-.bp-left-menu, .ub-left-menu {
-  background: #f9fafb !important;
-  border-color: #e5e7eb !important;
-}
-
-/* END NUCLEAR OVERRIDE */
-
 /* ════════════════════ BARBER PANEL FULL LAYOUT ════════════════════ */
 .bp-shell {
   display: flex;
@@ -6184,36 +6155,117 @@ body::before {
   .bp-sidebar {
     width: 240px;
   }
+
+  .bp-topbar-heading {
+    font-size: 24px;
+  }
+
+  .bp-content {
+    padding: 18px;
+  }
 }
 
 @media (max-width: 768px) {
   .bp-shell {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .bp-sidebar {
     width: 100%;
     height: auto;
-    max-height: 50vh;
+    max-height: none;
+    position: static;
     border-right: none;
     border-bottom: 1px solid var(--border2);
+    box-shadow: none;
+  }
+
+  .bp-sidebar-top {
+    overflow: visible;
+    padding-bottom: 12px;
+  }
+
+  .bp-sidebar-brand {
+    padding: 14px 16px;
+  }
+
+  .bp-sidebar-nav {
+    padding: 12px 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bp-sidebar-item {
+    justify-content: center;
+    padding: 10px;
+    font-size: 12.5px;
+  }
+
+  .bp-sidebar-footer {
+    padding: 12px;
   }
 
   .bp-main-wrap {
     flex: 1;
+    min-height: 0;
   }
 
   .bp-topbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
     height: auto;
     padding: 16px;
   }
 
+  .bp-topbar-left {
+    min-width: 0;
+  }
+
+  .bp-topbar-heading {
+    font-size: 22px;
+  }
+
   .bp-topbar-right {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bp-topbar-chip,
+  .bp-topbar-logout {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .bp-content {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bp-sidebar-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .bp-topbar-title {
+    font-size: 11px;
+  }
+
+  .bp-topbar-heading {
+    font-size: 18px;
+  }
+
+  .bp-sidebar-avatar {
+    width: 38px;
+    height: 38px;
   }
 }
 

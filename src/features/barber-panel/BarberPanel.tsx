@@ -229,6 +229,27 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
     return unsubscribe;
   }, [barberId, filter, todayDate]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
+      if (!["booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
+        return;
+      }
+
+      const eventData = payload.data as { barber_id?: number; appointment_date?: string };
+      if (eventData.barber_id && eventData.barber_id !== barberId) {
+        return;
+      }
+
+      if (eventData.appointment_date && eventData.appointment_date !== todayDate) {
+        return;
+      }
+
+      void Promise.all([loadDashboard(), loadAppointments(filter), loadNotifications()]).catch(() => undefined);
+    });
+
+    return unsubscribe;
+  }, [barberId, filter, todayDate]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {

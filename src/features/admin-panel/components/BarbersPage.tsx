@@ -11,6 +11,7 @@ import {
 import { StatCard } from "./StatCard";
 import type { BarberStatus } from "../types";
 import { subscribeProfileSync } from "../../../lib/profileSync";
+import { subscribeRealtimeChannel } from "../../../lib/realtime";
 
 interface BarberFormState {
   name: string;
@@ -161,6 +162,18 @@ export function BarbersPage() {
             : barber,
         ),
       );
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
+      if (!["barber.profile.updated", "barber.rating.updated", "booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
+        return;
+      }
+
+      void loadBarbers().catch(() => undefined);
     });
 
     return unsubscribe;
