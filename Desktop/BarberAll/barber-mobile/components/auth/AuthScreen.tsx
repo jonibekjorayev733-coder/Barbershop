@@ -20,6 +20,7 @@ import {
   verifyPhoneOtp,
   type LoginResponse,
 } from "@/services/api";
+import { notifyOtpCode } from "@/services/NotificationService";
 import { useAuth } from "@/context/AuthContext";
 import { getHomeRouteByRole } from "@/lib/roleRoute";
 
@@ -168,10 +169,13 @@ export default function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
       setOtpSent(true);
       setSmsCode("");
       startCountdown(45);
+      try {
+        await notifyOtpCode();
+      } catch {
+        // local notification fail bo'lsa login oqimini to'xtatmaymiz
+      }
       setOtpHint(
-        response.debug_code
-          ? `Test rejimi: kod → ${response.debug_code}`
-          : "SMS yuborildi! Telefoningizni tekshiring.",
+        "SMS yuborildi! Telefoningizni tekshiring 📱",
       );
     } catch (error: unknown) {
       Alert.alert("Xatolik", error instanceof Error ? error.message : "SMS kod yuborilmadi");
@@ -265,7 +269,7 @@ export default function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
             </View>
           )}
 
-          {otpHint && authMethod === "phone" ? <Text style={[styles.hint, otpHint.startsWith("Test") && styles.hintDebug]}>{otpHint}</Text> : null}
+          {otpHint && authMethod === "phone" ? <Text style={styles.hint}>{otpHint}</Text> : null}
           {mode === "register" && authMethod === "account" ? <Text style={styles.hint}>Parol kuchli bo'lsin: katta-kichik harf, raqam va maxsus belgi ishlating.</Text> : null}
           {loading ? <Text style={styles.waitHint}>{loadingNote || "Kuting..."}</Text> : null}
 
@@ -361,7 +365,6 @@ const styles = StyleSheet.create({
     color: "#0f172a",
   },
   hint: { color: "#475569", fontSize: 12, lineHeight: 18, marginBottom: 10 },
-  hintDebug: { color: "#b45309", backgroundColor: "#fef3c7", borderRadius: 8, padding: 8 },
   waitHint: { color: "#334155", fontSize: 12, lineHeight: 18, marginBottom: 8 },
   primaryBtn: { backgroundColor: "#1a73e8", borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 8 },
   primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },

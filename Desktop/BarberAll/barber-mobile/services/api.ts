@@ -237,7 +237,7 @@ export interface BarberRatingResponseApi {
   rating_votes: number;
 }
 
-export interface BarberAppointmentApi {
+export interface BarberDashboardAppointmentApi {
   id: number;
   barber_id: number;
   client_name: string;
@@ -257,8 +257,8 @@ export interface BarberDashboardApi {
   today_done: number;
   today_pending: number;
   progress_ratio: number;
-  next_appointment?: BarberAppointmentApi | null;
-  today_appointments: BarberAppointmentApi[];
+  next_appointment?: BarberDashboardAppointmentApi | null;
+  today_appointments: BarberDashboardAppointmentApi[];
 }
 
 export interface BarberNotificationApi {
