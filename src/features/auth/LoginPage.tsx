@@ -90,7 +90,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       setIsLoading(true);
       setErrorMessage(null);
       const response = await requestPhoneOtp({ name: phoneName.trim() || undefined, phone: phone.trim() });
-      setOtpHint(response.debug_code ? `SMS kod yuborildi. Test kod: ${response.debug_code}` : response.message || "SMS kod yuborildi.");
+      setOtpHint(response.message || "SMS kod yuborildi. Telefoningizni tekshiring.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "SMS kod yuborilmadi.");
     } finally {

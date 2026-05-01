@@ -949,13 +949,16 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
     db.commit()
 
     sent = send_sms_via_webhook(normalized_phone, f"Sharp Cuts tasdiqlash kodi: {otp_code}. Kod {PHONE_OTP_EXPIRY_SECONDS // 60} daqiqa amal qiladi.")
+    if not sent and not PHONE_OTP_DEBUG:
+        raise HTTPException(status_code=503, detail="SMS yuborish xizmati vaqtincha ishlamayapti. Keyinroq qayta urinib ko'ring")
+
     return {
         "success": True,
         "phone": normalized_phone,
         "expires_in_seconds": PHONE_OTP_EXPIRY_SECONDS,
         "delivery_status": "sent" if sent else "debug",
-        "debug_code": None if sent and not PHONE_OTP_DEBUG else otp_code,
-        "message": "SMS kod yuborildi" if sent else "SMS provider topilmadi, debug kod qaytarildi",
+        "debug_code": otp_code if PHONE_OTP_DEBUG else None,
+        "message": "SMS kod yuborildi" if sent else "Test rejimi: SMS provider yo'q, debug kod ishlatilmoqda",
     }
 
 
