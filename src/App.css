@@ -6597,31 +6597,30 @@ a.bp-all-link {
 .bp-location-summary-card strong { color: #f8fafc !important; }
 .bp-location-summary-card small  { color: #94a3b8 !important; }
 
-/* ===== Responsive redesign layer (clean + premium) ===== */
+/* ===== Responsive redesign v2 (visible + production-safe) ===== */
 
 @media (max-width: 1200px) {
   .ub-shell,
   .bp-shell {
-    padding: 20px 16px !important;
+    padding: 18px 14px !important;
   }
 
   .ub-panel-grid,
   .bp-panel-grid {
-    gap: 20px !important;
-    grid-template-columns: 220px minmax(0, 1fr) !important;
+    gap: 18px !important;
   }
 }
 
 @media (max-width: 1024px) {
   .ub-shell,
   .bp-shell {
-    padding: 14px !important;
+    padding: 12px !important;
   }
 
   .ub-panel-grid,
   .bp-panel-grid {
     grid-template-columns: 1fr !important;
-    gap: 14px !important;
+    gap: 12px !important;
   }
 
   .ub-page-head,
@@ -6633,25 +6632,40 @@ a.bp-all-link {
   }
 
   .ub-left-menu {
-    position: static !important;
-    top: auto !important;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    position: sticky !important;
+    top: 8px !important;
+    z-index: 30;
+    display: flex !important;
+    align-items: center;
     gap: 8px;
-    padding: 14px !important;
+    padding: 10px !important;
     border-radius: 16px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .ub-side-brand,
+  .ub-left-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ub-side-brand {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding-right: 8px;
+    border-right: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
   .ub-side-section-title,
   .ub-side-profile-card {
-    grid-column: 1 / -1;
+    display: none !important;
   }
 
   .ub-left-btn {
-    min-height: 44px;
+    flex-shrink: 0;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
     justify-content: center;
-    border-radius: 12px;
   }
 
   .ub-booking-grid {
@@ -6661,60 +6675,75 @@ a.bp-all-link {
   .bp-shell {
     display: block !important;
     height: auto !important;
-    min-height: 100vh;
     overflow: visible !important;
   }
 
   .bp-sidebar {
-    position: static !important;
-    top: auto !important;
+    position: sticky !important;
+    top: 8px !important;
+    z-index: 30;
     width: 100% !important;
     height: auto !important;
     border-right: 0 !important;
-    border-bottom: 1px solid var(--border2) !important;
-    box-shadow: none !important;
+    border-bottom: 0 !important;
     border-radius: 16px !important;
-    margin-bottom: 12px;
+    box-shadow: none !important;
+    margin-bottom: 10px;
   }
 
   .bp-sidebar-top {
-    padding: 8px 0;
+    padding: 10px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .bp-sidebar-top::-webkit-scrollbar {
+    display: none;
   }
 
   .bp-sidebar-brand {
-    padding: 12px 14px !important;
+    flex-shrink: 0;
+    border-bottom: 0 !important;
+    padding: 0 !important;
   }
 
   .bp-sidebar-nav {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1;
+    display: flex !important;
+    flex-wrap: nowrap !important;
     gap: 8px;
-    padding: 10px 12px !important;
+    padding: 0 !important;
   }
 
   .bp-sidebar-item {
-    min-height: 44px;
+    flex-shrink: 0;
+    min-height: 42px;
+    min-width: 120px;
+    border-radius: 999px;
     justify-content: center;
-    border-radius: 12px;
-    padding: 8px 10px;
+    padding: 0 14px;
   }
 
   .bp-sidebar-footer {
-    padding: 12px !important;
+    display: none !important;
   }
 
   .bp-topbar {
     height: auto !important;
     padding: 14px !important;
+    border-radius: 14px;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
 
   .bp-topbar-right {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
 }
 
@@ -6734,8 +6763,7 @@ a.bp-all-link {
 
   .ub-page-title,
   .bp-topbar-heading {
-    font-size: clamp(20px, 5.5vw, 26px) !important;
-    line-height: 1.15;
+    font-size: clamp(20px, 5.8vw, 24px) !important;
   }
 
   .ub-head-actions,
@@ -6765,28 +6793,26 @@ a.bp-all-link {
   }
 
   .ub-process-step {
-    min-width: 118px;
-    min-height: 58px;
+    min-width: 112px;
+    min-height: 56px;
     flex-shrink: 0;
   }
 
   .ub-left-menu {
-    grid-template-columns: 1fr 1fr;
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    padding: 12px !important;
+    padding: 8px !important;
   }
 
-  .ub-side-brand,
-  .ub-side-profile-card {
-    display: none !important;
-  }
-
-  .ub-side-section-title {
+  .ub-side-brand {
     display: none;
   }
 
   .ub-left-btn {
     min-height: 42px;
+    border-radius: 12px;
     padding: 0 8px;
   }
 
@@ -6801,21 +6827,34 @@ a.bp-all-link {
 
   .ub-slots-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px;
+  }
+
+  .bp-sidebar {
+    position: static !important;
+  }
+
+  .bp-sidebar-top {
+    display: block;
+    padding: 8px !important;
+  }
+
+  .bp-sidebar-brand {
+    display: none;
   }
 
   .bp-sidebar-nav {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .bp-sidebar-item {
+    min-width: 0;
+    border-radius: 12px;
+    padding: 10px 8px;
     flex-direction: row;
-    gap: 6px;
+    justify-content: center;
     font-size: 12px;
-  }
-
-  .bp-sidebar-footer {
-    display: none !important;
   }
 
   .bp-topbar-right {
@@ -6849,28 +6888,27 @@ a.bp-all-link {
   .ub-kpi-item,
   .bp-stat,
   .ub-bd-stat {
-    min-height: 88px;
-    padding: 12px;
+    min-height: 84px;
+    padding: 10px;
   }
 
   .ub-kpi-item strong,
   .bp-stat strong {
-    font-size: clamp(28px, 10vw, 34px) !important;
+    font-size: clamp(26px, 10vw, 34px) !important;
   }
 
   .ub-barber-row {
-    min-height: 80px;
-    padding: 10px 12px;
+    min-height: 78px;
+    padding: 10px;
   }
 
   .ub-barber-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
   }
 
   .ub-slot {
-    min-height: 42px;
+    min-height: 40px;
     font-size: 12px;
   }
 
@@ -6880,7 +6918,6 @@ a.bp-all-link {
 
   .bp-sidebar-item {
     justify-content: flex-start;
-    padding: 10px 12px;
   }
 
   .login-shell {
@@ -6911,6 +6948,7 @@ a.bp-all-link {
   .ub-shell *,
   .bp-shell * {
     max-width: 100%;
+    word-break: break-word;
   }
 
   iframe,
