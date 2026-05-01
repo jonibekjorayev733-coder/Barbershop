@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import "./panels-pro-fix.css";
 import { BarbersPage } from "./features/admin-panel/components/BarbersPage";
 import { BookingsPage } from "./features/admin-panel/components/BookingsPage";
 import { DashboardPage } from "./features/admin-panel/components/DashboardPage";

@@ -1,0 +1,496 @@
+/* Final pro layout fix layer for UserPanel + BarberPanel */
+
+.ub-shell,
+.bp-shell {
+  --panel-bg: #f8fafc;
+  --card-bg: #ffffff;
+  --line: #e2e8f0;
+  --text-main: #0f172a;
+  --text-soft: #64748b;
+}
+
+.ub-shell *,
+.bp-shell * {
+  box-sizing: border-box;
+}
+
+/* ================= USER PANEL ================= */
+.ub-shell {
+  background: var(--panel-bg) !important;
+  color: var(--text-main) !important;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.ub-panel-grid {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid !important;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.ub-left-menu {
+  position: sticky;
+  top: 18px;
+  border-radius: 18px !important;
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  padding: 14px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.ub-side-brand strong,
+.ub-side-profile-card strong,
+.ub-page-title,
+.ub-card h2,
+.ub-card h3,
+.ub-kpi-item strong,
+.ub-barber-info strong {
+  color: var(--text-main) !important;
+}
+
+.ub-side-brand span,
+.ub-side-section-title,
+.ub-side-profile-card span,
+.ub-side-profile-card small,
+.ub-page-sub,
+.ub-list-sub,
+.ub-card > p,
+.ub-barber-info span,
+.ub-help {
+  color: var(--text-soft) !important;
+}
+
+.ub-left-btn {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line) !important;
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-radius: 10px !important;
+  padding: 9px 10px !important;
+}
+
+.ub-left-btn + .ub-left-btn {
+  margin-top: 8px;
+}
+
+.ub-left-btn.active {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+.ub-side-profile-card {
+  margin-top: 16px;
+  border: 1px solid var(--line) !important;
+  background: #f8fafc !important;
+  border-radius: 14px !important;
+  padding: 10px;
+}
+
+.ub-main-panel {
+  min-width: 0;
+}
+
+.ub-page-head {
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  border-radius: 18px !important;
+  padding: 16px 20px !important;
+  margin-bottom: 16px;
+}
+
+.ub-page-eyebrow {
+  color: #2563eb !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.ub-page-title {
+  font-size: clamp(30px, 3vw, 48px);
+  line-height: 1.1;
+  margin: 6px 0;
+}
+
+.ub-head-actions {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ub-head-chip {
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.ub-av-btn,
+.ub-logout {
+  border-radius: 12px !important;
+}
+
+.ub-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ub-kpi-item {
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  border-radius: 16px !important;
+  min-height: 120px;
+}
+
+.ub-process {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ub-process-step {
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  border-radius: 14px !important;
+}
+
+.ub-process-step span,
+.ub-process-step strong {
+  color: var(--text-main) !important;
+}
+
+.ub-process-step.active {
+  border-color: #60a5fa !important;
+  background: #eff6ff !important;
+}
+
+.ub-card,
+.ub-side-card,
+.ub-booking-summary,
+.ub-success-summary,
+.ub-rating-box,
+.ub-bd-hero,
+.ub-bd-section,
+.ub-slot,
+.ub-barber-row {
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  color: var(--text-main) !important;
+}
+
+.ub-booking-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 16px;
+}
+
+.ub-search-input,
+.ub-field input {
+  border: 1px solid #cbd5e1 !important;
+  background: #fff !important;
+  color: var(--text-main) !important;
+  border-radius: 12px !important;
+}
+
+.ub-primary,
+.ub-secondary,
+.ub-back,
+.ub-back-btn {
+  border-radius: 12px !important;
+}
+
+/* ================= BARBER PANEL ================= */
+.bp-shell {
+  background: var(--panel-bg) !important;
+  color: var(--text-main) !important;
+  min-height: 100vh;
+}
+
+.bp-sidebar {
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%) !important;
+  border-right: 1px solid #1f2937 !important;
+}
+
+.bp-sidebar-name,
+.bp-sidebar-item,
+.bp-sidebar-info strong {
+  color: #e2e8f0 !important;
+}
+
+.bp-sidebar-tag,
+.bp-sidebar-info span {
+  color: #94a3b8 !important;
+}
+
+.bp-sidebar-item {
+  border-radius: 10px !important;
+}
+
+.bp-sidebar-item.active {
+  background: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+  color: #dbeafe !important;
+}
+
+.bp-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--line) !important;
+}
+
+.bp-topbar-title {
+  color: #64748b !important;
+}
+
+.bp-topbar-heading {
+  color: var(--text-main) !important;
+  font-size: clamp(28px, 2.6vw, 44px) !important;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.bp-topbar-chip {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.bp-topbar-logout {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #b91c1c !important;
+}
+
+.bp-content {
+  padding: 16px !important;
+}
+
+.bp-wrap,
+.bp-progress-card,
+.bp-next-card,
+.bp-day-block,
+.bp-filter-row,
+.bp-item,
+.bp-schedule-item,
+.bp-map-preview-card,
+.bp-location-summary-card,
+.bp-location-picker-card,
+.bp-today-card {
+  border: 1px solid var(--line) !important;
+  background: var(--card-bg) !important;
+  border-radius: 16px !important;
+  color: var(--text-main) !important;
+  box-shadow: none !important;
+}
+
+.bp-dashboard-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 14px;
+}
+
+.bp-main-col .bp-stats {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bp-item strong,
+.bp-list-head h4,
+.bp-next-card h3,
+.bp-day-block strong,
+.bp-schedule-top strong {
+  color: var(--text-main) !important;
+}
+
+.bp-item span,
+.bp-item small,
+.bp-list-head small,
+.bp-day-meta small,
+.bp-schedule-line,
+.bp-next-card p {
+  color: var(--text-soft) !important;
+}
+
+.bp-progress-track {
+  background: #e2e8f0 !important;
+}
+
+.bp-progress-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa) !important;
+}
+
+.bp-filter-row button {
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-radius: 10px !important;
+}
+
+.bp-filter-row button.active {
+  border-color: #60a5fa !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.bp-chip.action,
+.bp-complete-btn {
+  border-radius: 10px !important;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1024px) {
+  .ub-panel-grid {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .ub-kpi-grid,
+  .bp-main-col .bp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ub-booking-grid,
+  .bp-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .ub-shell,
+  .bp-shell {
+    padding: 10px !important;
+  }
+
+  .ub-panel-grid,
+  .bp-shell {
+    display: block !important;
+  }
+
+  .ub-left-menu {
+    position: sticky;
+    top: 8px;
+    z-index: 120;
+    margin-bottom: 10px;
+  }
+
+  .ub-side-profile-card {
+    display: none;
+  }
+
+  .ub-left-menu .ub-left-btn {
+    width: auto;
+    min-width: 132px;
+    margin: 0;
+  }
+
+  .ub-left-menu {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .ub-left-menu .ub-side-brand,
+  .ub-left-menu .ub-side-section-title {
+    display: none !important;
+  }
+
+  .ub-page-head,
+  .ub-card,
+  .bp-topbar,
+  .bp-content,
+  .bp-wrap {
+    padding: 12px !important;
+  }
+
+  .ub-page-title,
+  .bp-topbar-heading {
+    font-size: 28px !important;
+  }
+
+  .ub-process {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bp-sidebar {
+    position: sticky !important;
+    top: 0;
+    height: auto !important;
+    width: 100% !important;
+    z-index: 130;
+    border-right: none !important;
+    border-bottom: 1px solid #1f2937 !important;
+  }
+
+  .bp-sidebar-footer {
+    display: none !important;
+  }
+
+  .bp-sidebar-nav {
+    display: flex !important;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 10px 12px !important;
+    white-space: nowrap;
+  }
+
+  .bp-sidebar-item {
+    min-width: 130px;
+    justify-content: center;
+  }
+
+  .bp-topbar {
+    position: sticky;
+    top: 62px;
+    z-index: 120;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bp-topbar-right {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .bp-topbar-chip,
+  .bp-topbar-logout {
+    width: 100%;
+    text-align: center;
+    padding: 8px 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ub-kpi-grid,
+  .ub-process,
+  .bp-main-col .bp-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .ub-left-menu .ub-left-btn,
+  .bp-sidebar-item {
+    min-width: 120px;
+  }
+
+  .ub-page-title,
+  .bp-topbar-heading {
+    font-size: 24px !important;
+  }
+}
