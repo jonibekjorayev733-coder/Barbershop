@@ -728,10 +728,72 @@ def appointment_realtime_payload(appointment: models.BarberAppointment, barber_n
     }
 
 
+def _eskiz_get_token() -> Optional[str]:
+    """Fetch a fresh Eskiz.uz bearer token using EMAIL + PASSWORD env vars."""
+    email = os.getenv("ESKIZ_EMAIL", "").strip()
+    password = os.getenv("ESKIZ_PASSWORD", "").strip()
+    if not email or not password:
+        return None
+    try:
+        data = urllib.parse.urlencode({"email": email, "password": password}).encode("utf-8")
+        req = urllib.request.Request(
+            "https://notify.eskiz.uz/api/auth/login",
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+            token = (body.get("data") or {}).get("token")
+            if token:
+                return token
+    except Exception as exc:
+        print(f"[Eskiz] auth failed: {exc}")
+    return None
+
+
+def _eskiz_send(phone: str, message: str, token: str) -> bool:
+    """Send SMS via Eskiz.uz using the given bearer token."""
+    sender_id = os.getenv("ESKIZ_SENDER", "4546").strip()  # default test sender
+    try:
+        form_data = urllib.parse.urlencode({
+            "mobile_phone": phone,
+            "message": message,
+            "from": sender_id,
+            "callback_url": "",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://notify.eskiz.uz/api/message/sms/send",
+            data=form_data,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": f"Bearer {token}",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+            status_val = (body.get("status") or "").lower()
+            return status_val == "waiting" or status_val == "success"
+    except Exception as exc:
+        print(f"[Eskiz] send failed: {exc}")
+    return False
+
+
 def send_sms_via_webhook(phone: Optional[str], message: str) -> bool:
     if not phone:
         return False
 
+    # --- Try Eskiz.uz first ---
+    if os.getenv("ESKIZ_EMAIL", "").strip() and os.getenv("ESKIZ_PASSWORD", "").strip():
+        token = _eskiz_get_token()
+        if token:
+            ok = _eskiz_send(phone, message, token)
+            if ok:
+                return True
+            print("[Eskiz] send returned False, falling back to webhook")
+
+    # --- Fallback: generic webhook (SMS_API_URL + SMS_API_TOKEN) ---
     sms_api_url = os.getenv("SMS_API_URL", "").strip()
     sms_api_token = os.getenv("SMS_API_TOKEN", "").strip()
 
