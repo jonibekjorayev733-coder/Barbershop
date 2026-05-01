@@ -160,8 +160,9 @@ export function subscribeRealtimeChannel(
 
       reconnectAttempts += 1;
       wsDialostics.recordReconnectAttempt();
-      const baseDelay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000);
-      const jitter = randomInt(0, 600);
+      // Use longer initial delay to handle Render.com cold starts (can take 30-60s)
+      const baseDelay = Math.min(2000 * Math.pow(1.5, reconnectAttempts - 1), 30000);
+      const jitter = randomInt(0, 1000);
       const retryDelay = baseDelay + jitter;
       reconnectTimer = window.setTimeout(() => {
         connect();
@@ -176,7 +177,10 @@ export function subscribeRealtimeChannel(
     };
   };
 
-  connect();
+  // Small initial delay to avoid Render.com cold-start WebSocket failures
+  reconnectTimer = window.setTimeout(() => {
+    connect();
+  }, 1500);
 
   return () => {
     manuallyClosed = true;
