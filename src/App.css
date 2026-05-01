@@ -6269,3 +6269,330 @@ body::before {
   }
 }
 
+
+/*  DARK THEME MASTER OVERRIDE  */
+
+/* === Shell backgrounds === */
+.bp-shell,
+.ub-shell {
+  background: linear-gradient(180deg, #0a0e1a 0%, #0d1320 35%, #050811 100%) !important;
+  color: #e2e8f0 !important;
+  padding: 0 !important;
+}
+
+/* === Topbar === */
+.bp-topbar {
+  background: rgba(10, 14, 26, 0.92) !important;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.15) !important;
+  backdrop-filter: blur(16px) !important;
+}
+.bp-topbar-heading { color: #f8fafc !important; }
+.bp-topbar-title   { color: #94a3b8 !important; }
+.bp-topbar-chip {
+  background: rgba(96, 165, 250, 0.1) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #cbd5e1 !important;
+}
+.bp-topbar-logout {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+/* === Sidebar === */
+.bp-sidebar {
+  background: rgba(10, 14, 26, 0.97) !important;
+  border-right: 1px solid rgba(96, 165, 250, 0.12) !important;
+}
+.bp-sidebar-item { color: #94a3b8 !important; }
+.bp-sidebar-item.active,
+.bp-sidebar-item:hover {
+  background: rgba(96, 165, 250, 0.12) !important;
+  color: #60a5fa !important;
+}
+.bp-sidebar-head strong { color: #f8fafc !important; }
+.bp-sidebar-head span   { color: #64748b !important; }
+
+/* === Content wrapper === */
+.bp-content .bp-wrap {
+  background: rgba(13, 19, 32, 0.8) !important;
+  border: 1px solid rgba(96, 165, 250, 0.18) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* === Stat cards (BUGUN / TASDIQLANGAN / KUTILMOQDA) === */
+.bp-stat,
+.bp-stat-dark,
+.bp-stat-soft,
+.bp-stat-primary,
+.bp-stat-success,
+.bp-stat-warning,
+.ub-kpi-item,
+.ub-kpi-item-primary,
+.ub-kpi-item-success,
+.ub-kpi-item-warning {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(96, 165, 250, 0.22) !important;
+  color: #e2e8f0 !important;
+}
+.bp-stat strong,
+.ub-kpi-item strong {
+  color: #f8fafc !important;
+}
+.bp-stat span,
+.ub-kpi-item span {
+  color: #94a3b8 !important;
+}
+.bp-stat em { color: #60a5fa !important; }
+
+/* === Cards & list items === */
+.bp-item,
+.bp-schedule-item,
+.bp-progress-card,
+.bp-next-card,
+.bp-today-card,
+.bp-day-block,
+.bp-filter-row,
+.bp-link-card,
+.bp-list-head,
+.bp-head,
+.bp-notification-page,
+.bp-profile-page,
+.bp-location-picker-card,
+.bp-map-preview-card,
+.bp-location-summary-card {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === "Barcha bronlarni ko'rish" view-all link === */
+.bp-view-all,
+.bp-all-link,
+.bp-schedule-view-all,
+a.bp-view-all,
+a.bp-all-link {
+  background: rgba(96, 165, 250, 0.08) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #60a5fa !important;
+  border-radius: 12px !important;
+}
+.bp-view-all:hover,
+.bp-all-link:hover {
+  background: rgba(96, 165, 250, 0.15) !important;
+}
+
+/* === Next appointment card === */
+.bp-next-card h3 { color: #f8fafc !important; }
+.bp-next-card p   { color: #94a3b8 !important; }
+.bp-next-top b    { background: #3b82f6 !important; color: #fff !important; }
+
+/* === Item text === */
+.bp-item strong,
+.bp-schedule-item strong,
+.bp-day-block strong,
+.bp-list-head h4 { color: #f8fafc !important; }
+
+.bp-item span,
+.bp-item small,
+.bp-schedule-line,
+.bp-day-meta small,
+.bp-list-head small { color: #94a3b8 !important; }
+
+/* === Section kickers and headers === */
+.bp-greet,
+.bp-section-kicker,
+.bp-head h2 { color: #60a5fa !important; }
+.bp-date,
+.bp-profile-sub { color: #64748b !important; }
+
+/* === Progress bar container === */
+.bp-progress-card { color: #e2e8f0 !important; }
+
+/* === User panel shell === */
+.ub-page-head,
+.ub-card {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+.ub-page-eyebrow   { color: #60a5fa !important; }
+.ub-page-title,
+.ub-card h2,
+.ub-card h3        { color: #f8fafc !important; }
+.ub-page-sub,
+.ub-list-sub,
+.ub-card > p       { color: #94a3b8 !important; }
+
+/* === Barber rows (search results) === */
+.ub-barber-row,
+.ub-barbers-list-wrap {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+.ub-barber-row:hover {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+.ub-barber-row.preferred {
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* === Process steps === */
+.ub-process-step {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+.ub-process-step.active,
+.ub-process-step.done {
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+}
+.ub-process-step.active span,
+.ub-process-step.done span {
+  background: #3b82f6 !important;
+  color: #fff !important;
+}
+
+/* === Booking/success summaries === */
+.ub-booking-summary,
+.ub-success-summary,
+.ub-rating-box,
+.ub-bd-hero,
+.ub-bd-section,
+.ub-bd-stat,
+.ub-slot {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === Slots === */
+.ub-slot { color: #cbd5e1 !important; }
+.ub-slot.selected,
+.ub-slot:hover {
+  background: rgba(59, 130, 246, 0.18) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* === Inputs & fields === */
+.ub-search-input,
+.ub-field input,
+.barber-field input,
+.barber-textarea,
+.barber-field select {
+  background: rgba(15, 23, 42, 0.8) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(96, 165, 250, 0.2) !important;
+}
+.ub-search-input::placeholder,
+.ub-field input::placeholder { color: #64748b !important; }
+.ub-search-input:focus,
+.ub-field input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* === Buttons === */
+.ub-primary,
+.bp-shell .bp-complete-btn,
+.ba-pri {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3) !important;
+}
+.ba-sec,
+.ub-back-btn,
+.ub-logout,
+.bp-logout {
+  background: rgba(96, 165, 250, 0.08) !important;
+  border: 1px solid rgba(96, 165, 250, 0.25) !important;
+  color: #93c5fd !important;
+}
+.ub-go {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #60a5fa !important;
+}
+
+/* === Left menu === */
+.ub-left-menu,
+.bp-left-menu {
+  background: rgba(10, 14, 26, 0.92) !important;
+  border: 1px solid rgba(96, 165, 250, 0.12) !important;
+}
+.ub-left-btn,
+.bp-left-btn { color: #94a3b8 !important; }
+.ub-left-btn.active,
+.bp-left-btn.active {
+  background: rgba(96, 165, 250, 0.12) !important;
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+.ub-left-btn:hover,
+.bp-left-btn:hover {
+  background: rgba(96, 165, 250, 0.08) !important;
+  color: #93c5fd !important;
+}
+
+/* === Side profile card === */
+.ub-side-profile-card,
+.bp-side-profile-card {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1px solid rgba(96, 165, 250, 0.15) !important;
+}
+.ub-side-profile-card strong,
+.bp-side-profile-card strong { color: #f8fafc !important; }
+.ub-side-profile-card span,
+.bp-side-profile-card span   { color: #94a3b8 !important; }
+.ub-side-profile-card small,
+.bp-side-profile-card small  { color: #64748b !important; }
+.ub-side-brand strong,
+.bp-side-brand strong         { color: #f8fafc !important; }
+.ub-side-brand span,
+.bp-side-brand span           { color: #64748b !important; }
+.ub-side-section-title,
+.bp-side-section-title        { color: #475569 !important; }
+.ub-side-title                { color: #f8fafc !important; }
+.ub-side-steps > div          { color: #cbd5e1 !important; }
+
+/* === Head chips === */
+.ub-head-chip,
+.bp-head-chip {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #94a3b8 !important;
+}
+.ub-head-chip-soft,
+.bp-head-chip-soft {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+/* === Hero pills === */
+.ub-hero-pills span {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(96, 165, 250, 0.25) !important;
+  color: #93c5fd !important;
+}
+
+/* === Side avatar === */
+.ub-side-avatar,
+.bp-side-avatar {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+/* === Location cards === */
+.bp-location-picker-map,
+.location-picker-map { border-color: rgba(96, 165, 250, 0.2) !important; }
+.bp-location-summary-card strong { color: #f8fafc !important; }
+.bp-location-summary-card small  { color: #94a3b8 !important; }
