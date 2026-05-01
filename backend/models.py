@@ -93,14 +93,32 @@ class BarberAppointment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     barber_id = Column(Integer, ForeignKey("barber.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("student.id"), nullable=True, index=True)
     client_name = Column(String, nullable=False)
     client_phone = Column(String, nullable=False)
     appointment_time = Column(String, nullable=False)
     appointment_date = Column(String, nullable=False, index=True)
-    status = Column(String, default="pending")
+    status = Column(String, default="pending")  # pending, accepted, rejected, completed, rated
+    user_rating = Column(Integer, nullable=True)  # 1-5 stars
+    user_rated_at = Column(DateTime, nullable=True)
     service_name = Column(String, nullable=True)
     created_at = Column(DateTime, default=tashkent_now)
     updated_at = Column(DateTime, default=tashkent_now, onupdate=tashkent_now)
+
+
+class UserNotification(Base):
+    __tablename__ = "user_notification"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("student.id"), nullable=False, index=True)
+    notification_type = Column(String)  # "booking_accepted", "booking_rejected", "booking_rated", "booking_approved"
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    barber_id = Column(Integer, nullable=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("barber_appointment.id"), nullable=True)
+    sms_sent = Column(Boolean, default=False)
+    voice_sent = Column(Boolean, default=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=tashkent_now)
 
 class Student(Base):
     __tablename__ = "student"

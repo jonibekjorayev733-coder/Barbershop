@@ -602,3 +602,25 @@ class PhoneOtpVerifyRequest(BaseModel):
     name: Optional[str] = None
     phone: str
     code: str
+
+
+class UserNotificationBase(BaseModel):
+    notification_type: str
+    title: str
+    message: str
+    barber_id: Optional[int] = None
+    appointment_id: Optional[int] = None
+    sms_sent: Optional[bool] = False
+    voice_sent: Optional[bool] = False
+
+
+class UserNotificationCreate(UserNotificationBase):
+    user_id: int
+
+
+class UserNotification(UserNotificationBase):
+    id: int
+    user_id: int
+    is_read: bool
+    created_at: datetime
+    class Config: from_attributes = True

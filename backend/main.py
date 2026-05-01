@@ -3485,7 +3485,158 @@ def reject_barber_appointment(barber_id: int, appointment_id: int, db: Session =
     reject_event_payload = appointment_realtime_payload(appointment, db_barber.name if db_barber else None)
     schedule_realtime("bookings", "booking.cancelled", reject_event_payload)
     schedule_realtime(f"barber:{barber_id}", "booking.cancelled", reject_event_payload)
+    
+    # Send SMS to user
+    if appointment.student_id:
+        user = db.query(models.Student).filter(models.Student.id == appointment.student_id).first()
+        if user and user.phone:
+            send_sms_via_webhook(user.phone, f"Kechirasiz, sartarosh {db_barber.name if db_barber else 'Unknown'} sizning broningizni rad etdi.")
+    
     return appointment
+
+
+@app.patch("/barbers/{barber_id}/appointments/{appointment_id}/accept", response_model=schemas.BarberAppointment)
+def accept_barber_appointment(barber_id: int, appointment_id: int, db: Session = Depends(get_db)):
+    """Barber accepts a booking. User gets SMS notification."""
+    appointment = db.query(models.BarberAppointment).filter(
+        models.BarberAppointment.id == appointment_id,
+        models.BarberAppointment.barber_id == barber_id,
+    ).first()
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Appointment topilmadi")
+
+    appointment.status = "accepted"
+    appointment.updated_at = now_tashkent()
+    db.commit()
+    db.refresh(appointment)
+    
+    db_barber = db.query(models.Barber).filter(models.Barber.id == barber_id).first()
+    
+    # Send SMS + create notification for user
+    if appointment.student_id:
+        user = db.query(models.Student).filter(models.Student.id == appointment.student_id).first()
+        if user and user.phone:
+            msg = f"Sizning broningiz {db_barber.name if db_barber else 'Sartarosh'} tomonidan qabul qilindi! Vaqt: {appointment.appointment_date} {appointment.appointment_time}"
+            send_sms_via_webhook(user.phone, msg)
+            
+            # Create user notification
+            notification = models.UserNotification(
+                user_id=appointment.student_id,
+                notification_type="booking_accepted",
+                title="Broningiz qabul qilindi",
+                message=msg,
+                barber_id=barber_id,
+                appointment_id=appointment_id,
+                sms_sent=True,
+            )
+            db.add(notification)
+            db.commit()
+    
+    accept_event_payload = appointment_realtime_payload(appointment, db_barber.name if db_barber else None)
+    schedule_realtime("bookings", "booking.accepted", accept_event_payload)
+    schedule_realtime(f"barber:{barber_id}", "booking.accepted", accept_event_payload)
+    
+    return appointment
+
+
+@app.post("/appointments/{appointment_id}/rate")
+def rate_appointment(appointment_id: int, payload: dict, current_user: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """User rates the appointment (1-5 stars) after barber accepts it."""
+    user_id = current_user.get("user_id")
+    rating = payload.get("rating")
+    
+    if not isinstance(rating, int) or rating < 1 or rating > 5:
+        raise HTTPException(status_code=400, detail="Baho 1 dan 5 gacha bo'lishi kerak")
+    
+    appointment = db.query(models.BarberAppointment).filter(
+        models.BarberAppointment.id == appointment_id,
+        models.BarberAppointment.student_id == user_id,
+    ).first()
+    
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Appointment topilmadi yoki sizga tegishli emas")
+    
+    if appointment.status != "accepted":
+        raise HTTPException(status_code=400, detail="Faqat qabul qilingan broningizni baholashingiz mumkin")
+    
+    appointment.user_rating = rating
+    appointment.user_rated_at = now_tashkent()
+    appointment.status = "rated"
+    db.commit()
+    db.refresh(appointment)
+    
+    # Update barber rating
+    db_barber = db.query(models.Barber).filter(models.Barber.id == appointment.barber_id).first()
+    if db_barber:
+        previous_votes = int(db_barber.rating_votes or 0)
+        previous_rating = float(db_barber.rating or 0)
+        next_votes = previous_votes + 1
+        next_rating = ((previous_rating * previous_votes) + rating) / max(1, next_votes)
+        db_barber.rating_votes = next_votes
+        db_barber.rating = round(next_rating, 2)
+        db_barber.updated_at = now_tashkent()
+        db.commit()
+        
+        # Send SMS to barber
+        msg = f"Siz {rating} ⭐ baholandiniz! Sizning yangi o'rtacha baho: {next_rating}/5"
+        send_sms_via_webhook(db_barber.phone, msg)
+        
+        # Create notification for barber
+        barber_notif = models.UserNotification(
+            user_id=db_barber.id,
+            notification_type="booking_rated",
+            title=f"Yangi baho: {rating} ⭐",
+            message=msg,
+            appointment_id=appointment_id,
+            sms_sent=True,
+        )
+        db.add(barber_notif)
+        db.commit()
+    
+    return {"success": True, "rating": rating, "appointment_id": appointment_id}
+
+
+@app.get("/user/notifications")
+def get_user_notifications(current_user: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Get user's booking notifications."""
+    user_id = current_user.get("user_id")
+    notifications = db.query(models.UserNotification).filter(
+        models.UserNotification.user_id == user_id
+    ).order_by(models.UserNotification.created_at.desc()).limit(50).all()
+    
+    return [
+        {
+            "id": n.id,
+            "type": n.notification_type,
+            "title": n.title,
+            "message": n.message,
+            "barber_id": n.barber_id,
+            "appointment_id": n.appointment_id,
+            "sms_sent": n.sms_sent,
+            "voice_sent": n.voice_sent,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        }
+        for n in notifications
+    ]
+
+
+@app.patch("/user/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: int, current_user: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Mark notification as read."""
+    user_id = current_user.get("user_id")
+    notification = db.query(models.UserNotification).filter(
+        models.UserNotification.id == notification_id,
+        models.UserNotification.user_id == user_id,
+    ).first()
+    
+    if notification is None:
+        raise HTTPException(status_code=404, detail="Notification topilmadi")
+    
+    notification.is_read = True
+    db.commit()
+    
+    return {"success": True}
 
 
 @app.post("/barbers/{barber_id}/appointments/{appointment_id}/send-sms")
@@ -3734,6 +3885,20 @@ def update_student_profile(student_id: int, payload: schemas.StudentProfileUpdat
     normalized_phone = normalize_phone(payload.phone or db_student.phone)
     if not normalized_name:
         raise HTTPException(status_code=400, detail="Ism majburiy")
+
+    # Check if phone is being changed
+    if normalized_phone and normalized_phone != normalize_phone(db_student.phone):
+        # Check for active/pending bookings
+        active_bookings = db.query(models.BarberAppointment).filter(
+            models.BarberAppointment.student_id == student_id,
+            models.BarberAppointment.status.in_(["pending", "accepted"]),
+        ).first()
+        
+        if active_bookings:
+            raise HTTPException(
+                status_code=400, 
+                detail="Siz aktiv bron qilgansiz. Broningiz tugagunga qadar telefon raqamingizni o'zgartira olmaysiz."
+            )
 
     if normalized_email:
         existing_student = db.query(models.Student).filter(
