@@ -325,12 +325,30 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
-    const data = (await response.json()) as { detail?: string; message?: string };
+    const data = (await response.json()) as {
+      detail?: string | Array<{ loc?: Array<string | number>; msg?: string; type?: string }>;
+      message?: string;
+      error?: string;
+    };
+
     if (typeof data?.detail === "string" && data.detail.trim()) {
       return data.detail;
     }
+
+    if (Array.isArray(data?.detail) && data.detail.length > 0) {
+      const first = data.detail[0];
+      if (first?.msg?.trim()) {
+        return first.msg.trim();
+      }
+      return "Kiritilgan ma'lumotda xatolik bor";
+    }
+
     if (typeof data?.message === "string" && data.message.trim()) {
       return data.message;
+    }
+
+    if (typeof data?.error === "string" && data.error.trim()) {
+      return data.error;
     }
   } catch {
     const text = await response.text();

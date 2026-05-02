@@ -59,6 +59,18 @@ PHONE_OTP_EXPIRY_SECONDS = int(os.getenv("PHONE_OTP_EXPIRY_SECONDS", "300"))
 PHONE_OTP_RESEND_SECONDS = int(os.getenv("PHONE_OTP_RESEND_SECONDS", "45"))
 PHONE_OTP_DEBUG = os.getenv("PHONE_OTP_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 
+
+def is_sms_provider_configured() -> bool:
+    has_eskiz = bool(os.getenv("ESKIZ_EMAIL", "").strip() and os.getenv("ESKIZ_PASSWORD", "").strip())
+    has_webhook = bool(os.getenv("SMS_API_URL", "").strip())
+    return has_eskiz or has_webhook
+
+
+def effective_phone_otp_debug() -> bool:
+    if PHONE_OTP_DEBUG:
+        return True
+    return not is_sms_provider_configured()
+
 REALTIME_METRICS: Dict[str, int] = {
     "ws_connected": 0,
     "ws_auth_failed": 0,
@@ -877,7 +889,8 @@ def create_phone_student_account(db: Session, name: str, phone: str) -> models.S
     normalized_phone = normalize_phone(phone)
     normalized_name = (name or "").strip()
     if not normalized_name:
-        raise HTTPException(status_code=400, detail="Yangi foydalanuvchi uchun ism majburiy")
+        suffix = normalized_phone[-4:] if normalized_phone else f"{random.randint(1000, 9999)}"
+        normalized_name = f"Mijoz {suffix}"
 
     placeholder_email = phone_placeholder_email(normalized_phone)
     existing_student = db.query(models.Student).filter(func.lower(models.Student.email) == placeholder_email.lower()).first()
@@ -948,8 +961,24 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
     )
     db.commit()
 
+    otp_debug_mode = effective_phone_otp_debug()
     sent = send_sms_via_webhook(normalized_phone, f"Sharp Cuts tasdiqlash kodi: {otp_code}. Kod {PHONE_OTP_EXPIRY_SECONDS // 60} daqiqa amal qiladi.")
-    if not sent and not PHONE_OTP_DEBUG:
+    if not sent and not otp_debug_mode:
+        db.execute(
+            text(
+                """
+                UPDATE phone_otp_auth
+                SET is_used = TRUE, used_at = :now_value
+                WHERE phone = :phone AND code = :code AND is_used = FALSE
+                """
+            ),
+            {
+                "now_value": now_value,
+                "phone": normalized_phone,
+                "code": otp_code,
+            },
+        )
+        db.commit()
         raise HTTPException(status_code=503, detail="SMS yuborish xizmati vaqtincha ishlamayapti. Keyinroq qayta urinib ko'ring")
 
     return {
@@ -957,7 +986,7 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
         "phone": normalized_phone,
         "expires_in_seconds": PHONE_OTP_EXPIRY_SECONDS,
         "delivery_status": "sent" if sent else "debug",
-        "debug_code": otp_code if PHONE_OTP_DEBUG else None,
+        "debug_code": otp_code if otp_debug_mode else None,
         "message": "SMS kod yuborildi" if sent else "Test rejimi: SMS provider yo'q, debug kod ishlatilmoqda",
     }
 
@@ -2237,17 +2266,8 @@ def create_teacher_status_notification(
 
 def get_password_policy_error(password_value: str) -> Optional[str]:
     candidate = password_value or ""
-    if len(candidate) < 8:
-        return "Parol kamida 8 ta belgidan iborat bo'lishi kerak"
-    if not any(ch.islower() for ch in candidate):
-        return "Parolda kamida 1 ta kichik harf bo'lishi kerak"
-    if not any(ch.isupper() for ch in candidate):
-        return "Parolda kamida 1 ta katta harf bo'lishi kerak"
-    if not any(ch.isdigit() for ch in candidate):
-        return "Parolda kamida 1 ta raqam bo'lishi kerak"
-    special_chars = "!@#$%^&*()-_=+[]{};:,.?/\\|`~"
-    if not any(ch in special_chars for ch in candidate):
-        return "Parolda kamida 1 ta maxsus belgi bo'lishi kerak"
+    if len(candidate) < 6:
+        return "Parol kamida 6 ta belgidan iborat bo'lishi kerak"
     return None
 
 @app.get("/")
@@ -2284,7 +2304,11 @@ def register_user(payload: schemas.RegisterUserRequest, db: Session = Depends(ge
         role="student",
     )
     db.add(db_student)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Bu email allaqachon ro'yxatdan o'tgan")
     db.refresh(db_student)
     return build_login_response(db_student.id, "student", db_student.name, db_student.email, db_student.avatar, db_student.phone)
 
