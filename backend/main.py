@@ -2182,7 +2182,7 @@ def format_booking_code(appointment_id: int) -> str:
 
 def normalize_status_for_admin(status_value: Optional[str]) -> str:
     normalized = (status_value or "pending").strip().lower()
-    if normalized in {"pending", "completed", "cancelled"}:
+    if normalized in {"pending", "accepted", "completed", "cancelled"}:
         return normalized
     return "pending"
 
@@ -3383,7 +3383,22 @@ def get_user_barber_availability(barber_id: int, date: Optional[str] = None, db:
 
 
 @app.post("/user/bookings", response_model=schemas.UserBookingConfirmation)
-def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session = Depends(get_db)):
+def create_user_booking(
+    payload: schemas.UserBookingCreateRequest,
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.get("user_id")
+    role = (current_user.get("role") or "").strip().lower()
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Foydalanuvchi aniqlanmadi")
+    if role not in {"student", "user"}:
+        raise HTTPException(status_code=403, detail="Faqat mijoz booking yarata oladi")
+
+    student = db.query(models.Student).filter(models.Student.id == int(user_id)).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+
     db_barber = db.query(models.Barber).filter(models.Barber.id == payload.barber_id).first()
     if db_barber is None:
         raise HTTPException(status_code=404, detail="Sartarosh topilmadi")
@@ -3405,27 +3420,37 @@ def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session =
     if existing:
         raise HTTPException(status_code=409, detail="Bu vaqt band, boshqa vaqt tanlang")
 
-    normalized_phone = normalize_phone(payload.client_phone)
-    if normalized_phone:
-        pending_rows = db.query(models.BarberAppointment).filter(
-            models.BarberAppointment.status == "pending",
-            models.BarberAppointment.appointment_date >= today_tashkent_str(),
-        ).all()
-        duplicate_pending = next(
-            (row for row in pending_rows if normalize_phone(row.client_phone) == normalized_phone),
-            None,
+    effective_client_name = (payload.client_name or student.name or "").strip()
+    if not effective_client_name:
+        raise HTTPException(status_code=400, detail="Mijoz ismi majburiy")
+
+    normalized_phone = normalize_phone(payload.client_phone) or normalize_phone(student.phone)
+    if not normalized_phone:
+        raise HTTPException(status_code=400, detail="Telefon raqam majburiy")
+
+    pending_rows = db.query(models.BarberAppointment).filter(
+        models.BarberAppointment.status == "pending",
+        models.BarberAppointment.appointment_date >= today_tashkent_str(),
+        or_(
+            models.BarberAppointment.student_id == int(user_id),
+            and_(
+                models.BarberAppointment.student_id.is_(None),
+                models.BarberAppointment.client_phone == normalized_phone,
+            ),
+        ),
+    ).all()
+    if pending_rows:
+        raise HTTPException(
+            status_code=409,
+            detail="Siz avval bron qilgansiz. Sartarosh tasdiqlagach yana bron qilishingiz mumkin.",
         )
-        if duplicate_pending:
-            raise HTTPException(
-                status_code=409,
-                detail="Siz avval bron qilgansiz. Sartarosh tasdiqlagach yana bron qilishingiz mumkin.",
-            )
 
     service_name = (payload.service_name or db_barber.specialty or "Haircut").strip()
     appointment = models.BarberAppointment(
         barber_id=db_barber.id,
-        client_name=payload.client_name.strip(),
-        client_phone=payload.client_phone.strip(),
+        student_id=int(user_id),
+        client_name=effective_client_name,
+        client_phone=normalized_phone,
         appointment_time=target_time,
         appointment_date=target_date,
         status="pending",
@@ -3459,6 +3484,56 @@ def create_user_booking(payload: schemas.UserBookingCreateRequest, db: Session =
         "created_at": appointment.created_at,
         "status": appointment.status,
     }
+
+
+@app.get("/user/bookings", response_model=List[schemas.AdminBookingRow])
+def read_user_bookings(
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.get("user_id")
+    role = (current_user.get("role") or "").strip().lower()
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Foydalanuvchi aniqlanmadi")
+    if role not in {"student", "user"}:
+        raise HTTPException(status_code=403, detail="Faqat mijoz bronlari mavjud")
+
+    student = db.query(models.Student).filter(models.Student.id == int(user_id)).first()
+    normalized_phone = normalize_phone(student.phone) if student else ""
+
+    query = db.query(models.BarberAppointment, models.Barber).join(
+        models.Barber,
+        models.BarberAppointment.barber_id == models.Barber.id,
+    ).filter(
+        or_(
+            models.BarberAppointment.student_id == int(user_id),
+            and_(
+                models.BarberAppointment.student_id.is_(None),
+                normalized_phone != "",
+                models.BarberAppointment.client_phone == normalized_phone,
+            ),
+        )
+    )
+
+    rows = query.order_by(models.BarberAppointment.appointment_date.desc(), models.BarberAppointment.id.desc()).all()
+
+    return [
+        {
+            "id": format_booking_code(appointment.id),
+            "client": appointment.client_name,
+            "phone": appointment.client_phone,
+            "barber": barber.name,
+            "service": appointment.service_name or barber.specialty or "Haircut",
+            "price": get_discounted_price(
+                get_barber_service_price(barber, appointment.service_name),
+                barber.discount_percent,
+            ),
+            "time": appointment.appointment_time,
+            "date": appointment.appointment_date,
+            "status": normalize_status_for_admin(appointment.status),
+        }
+        for appointment, barber in rows
+    ]
 
 
 @app.get("/bookings/", response_model=List[schemas.AdminBookingRow])
