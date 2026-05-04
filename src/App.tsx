@@ -36,6 +36,7 @@ const SESSION_STORAGE_KEY = "sharpcuts_session";
 const PREFERRED_BARBER_STORAGE_KEY = "sharpcuts_preferred_barber";
 const PREAUTH_LOCATION_READY_KEY = "sharpcuts_preauth_location_ready";
 const PREAUTH_LOCATION_COORDS_KEY = "sharpcuts_preauth_location_coords";
+const SESSION_EXPIRED_EVENT = "sharpcuts:session-expired";
 
 function readPreferredBarberId(): number | null {
   try {
@@ -238,6 +239,10 @@ export default function App() {
       setSession(readStoredSession());
     };
 
+    const handleSessionExpired = () => {
+      handleLogout();
+    };
+
     const unsubscribe = subscribeProfileSync((payload) => {
       if (!session) {
         return;
@@ -270,9 +275,11 @@ export default function App() {
     });
 
     window.addEventListener("storage", handleStorageSession);
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () => {
       unsubscribe();
       window.removeEventListener("storage", handleStorageSession);
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     };
   }, [session]);
 

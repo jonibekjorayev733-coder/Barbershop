@@ -13,6 +13,7 @@ export interface RealtimeEventPayload<T = Record<string, unknown>> {
 
 const SESSION_STORAGE_KEY = "sharpcuts_session";
 const RECENT_EVENT_LIMIT = 300;
+const SESSION_EXPIRED_EVENT = "sharpcuts:session-expired";
 
 function getAccessTokenFromSession(): string | null {
   try {
@@ -21,7 +22,10 @@ function getAccessTokenFromSession(): string | null {
       return null;
     }
 
-    const parsed = JSON.parse(raw) as { accessToken?: string };
+    const parsed = JSON.parse(raw) as { accessToken?: string; expiresAt?: number };
+    if (typeof parsed?.expiresAt === "number" && parsed.expiresAt <= Date.now()) {
+      return null;
+    }
     if (typeof parsed?.accessToken === "string" && parsed.accessToken.trim()) {
       return parsed.accessToken;
     }
@@ -46,8 +50,6 @@ export function subscribeRealtimeChannel(
     return () => undefined;
   }
 
-  const accessToken = getAccessTokenFromSession();
-  const wsUrl = `${getRealtimeBaseUrl()}/ws/events/${encodeURIComponent(channel)}${accessToken ? `?token=${encodeURIComponent(accessToken)}` : ""}`;
   let socket: WebSocket | null = null;
   let heartbeatTimer: number | null = null;
   let reconnectTimer: number | null = null;
@@ -90,6 +92,13 @@ export function subscribeRealtimeChannel(
 
   const connect = () => {
     clearReconnect();
+    const accessToken = getAccessTokenFromSession();
+    if (!accessToken) {
+      manuallyClosed = true;
+      return;
+    }
+
+    const wsUrl = `${getRealtimeBaseUrl()}/ws/events/${encodeURIComponent(channel)}?token=${encodeURIComponent(accessToken)}`;
     const nextSocket = new WebSocket(wsUrl);
     socket = nextSocket;
 
@@ -151,9 +160,26 @@ export function subscribeRealtimeChannel(
       }
     };
 
-    nextSocket.onclose = () => {
+    nextSocket.onclose = (event) => {
       clearHeartbeat();
       wsDialostics.recordDisconnect();
+
+      const unauthorizedClose =
+        event.code === 1008 ||
+        event.code === 4401 ||
+        event.code === 4001 ||
+        /unauthorized|token|auth/i.test(event.reason || "");
+
+      if (unauthorizedClose) {
+        manuallyClosed = true;
+        try {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+        } catch {
+          return;
+        }
+      }
+
       if (manuallyClosed) {
         return;
       }
@@ -171,7 +197,7 @@ export function subscribeRealtimeChannel(
 
     nextSocket.onerror = () => {
       wsDialostics.recordError("WebSocket error");
-      if (nextSocket.readyState === WebSocket.OPEN || nextSocket.readyState === WebSocket.CONNECTING) {
+      if (nextSocket.readyState === WebSocket.OPEN) {
         nextSocket.close();
       }
     };

@@ -1,4 +1,6 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "http://127.0.0.1:8000";
+const SESSION_STORAGE_KEY = "sharpcuts_session";
+const SESSION_EXPIRED_EVENT = "sharpcuts:session-expired";
 
 export interface LoginRequest {
   email: string;
@@ -307,20 +309,57 @@ export interface BarberApiPayload {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const accessToken = getAccessTokenFromSession();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init?.headers ?? {}),
     },
     ...init,
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifySessionExpired();
+    }
     const message = await extractErrorMessage(response);
     throw new Error(message || `So'rovda xatolik: ${response.status}`);
   }
 
   return (await response.json()) as T;
+}
+
+function getAccessTokenFromSession(): string | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as { accessToken?: string; expiresAt?: number };
+    if (typeof parsed?.expiresAt === "number" && parsed.expiresAt <= Date.now()) {
+      notifySessionExpired();
+      return null;
+    }
+
+    if (typeof parsed?.accessToken === "string" && parsed.accessToken.trim()) {
+      return parsed.accessToken;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function notifySessionExpired() {
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  } catch {
+    return;
+  }
 }
 
 async function extractErrorMessage(response: Response): Promise<string> {
