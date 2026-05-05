@@ -78,6 +78,50 @@ function formatDistance(distanceKm?: number | null): string {
   return `${distanceKm.toFixed(1)} km`;
 }
 
+function parseTimeToMinutes(timeValue: string): number | null {
+  const value = String(timeValue || "").trim();
+  const ampm = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let hour = Number(ampm[1]);
+    const minute = Number(ampm[2]);
+    const period = ampm[3].toUpperCase();
+    if (period === "PM" && hour < 12) hour += 12;
+    if (period === "AM" && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+
+  const hhmm = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (hhmm) {
+    const hour = Number(hhmm[1]);
+    const minute = Number(hhmm[2]);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    return hour * 60 + minute;
+  }
+
+  return null;
+}
+
+function getTashkentNowMinutes(now: Date): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tashkent",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const hour = Number(parts.find((item) => item.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((item) => item.type === "minute")?.value ?? "0");
+  return hour * 60 + minute;
+}
+
+function isPastTimeSlot(dateISO: string, slotTime: string, now: Date): boolean {
+  const today = getTashkentTodayISO(now);
+  if (dateISO !== today) return false;
+  const slotMinutes = parseTimeToMinutes(slotTime);
+  if (slotMinutes == null) return false;
+  return slotMinutes <= getTashkentNowMinutes(now);
+}
+
 export function UserPanel({ userId, userName, userEmail = "", userAvatar, preferredBarberId = null, onProfileUpdated, onLogout }: UserPanelProps) {
   const [view, setView] = useState<UserView>("booking");
   const [step, setStep] = useState<UserBookingStep>("barbers");
@@ -86,6 +130,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const [selectedDate, setSelectedDate] = useState(() => getTashkentTodayISO());
   const [availability, setAvailability] = useState<BarberAvailabilityApi | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [nowTick, setNowTick] = useState(() => new Date());
   const [clientName, setClientName] = useState(userName || "");
   const [clientPhone, setClientPhone] = useState("");
   const [confirmation, setConfirmation] = useState<UserBookingConfirmationApi | null>(null);
@@ -218,6 +263,11 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const isSelectedToday = selectedDate === today;
   const dateLabelPrefix = isSelectedToday ? "Bugun" : isSelectedPast ? "O'tgan kun" : "";
 
+  const visibleSlots = useMemo(
+    () => (availability?.slots || []).filter((slot) => !isPastTimeSlot(selectedDate, slot.time, nowTick)),
+    [availability?.slots, nowTick, selectedDate],
+  );
+
   const filteredBarbers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     const list = !query
@@ -256,6 +306,24 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
     const data = await getBarberAvailability(barberId, dateValue);
     setAvailability(data);
   };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowTick(new Date());
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTime) return;
+    if (isPastTimeSlot(selectedDate, selectedTime, nowTick)) {
+      setSelectedTime("");
+      setErrorMessage("Tanlangan vaqt o'tib ketdi. Iltimos, yangi vaqt tanlang.");
+      if (step === "details") {
+        setStep("times");
+      }
+    }
+  }, [nowTick, selectedDate, selectedTime, step]);
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
@@ -424,6 +492,11 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
       setErrorMessage("Davom etish uchun vaqtni tanlang.");
       return;
     }
+    if (isPastTimeSlot(selectedDate, selectedTime, nowTick)) {
+      setErrorMessage("Tanlangan vaqt o'tib ketdi. Iltimos, yangi vaqt tanlang.");
+      setSelectedTime("");
+      return;
+    }
     setErrorMessage(null);
     setStep("details");
   };
@@ -435,6 +508,12 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
     }
     if (!clientName.trim() || !clientPhone.trim()) {
       setErrorMessage("Ism va telefon raqamingizni kiriting.");
+      return;
+    }
+    if (isPastTimeSlot(selectedDate, selectedTime, nowTick)) {
+      setErrorMessage("Tanlangan vaqt o'tib ketdi. Iltimos, yangi vaqt tanlang.");
+      setSelectedTime("");
+      setStep("times");
       return;
     }
 
@@ -878,10 +957,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                   </div>
                   <div className="ub-section-title">MAVJUD VAQTLAR</div>
                   <div className="ub-slots-grid">
-                    {(availability?.slots || []).map((slot) => {
+                    {visibleSlots.map((slot) => {
                       const isSelected = selectedTime === slot.time;
                       const isBooked = slot.status === "booked";
-                      const isPast = isSelectedPast;
+                      const isPast = isSelectedPast || isPastTimeSlot(selectedDate, slot.time, nowTick);
                       return (
                         <button
                           key={slot.time}
@@ -894,6 +973,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                       );
                     })}
                   </div>
+                  {visibleSlots.length === 0 ? <div className="ub-empty">Bugun uchun vaqtlar tugagan.</div> : null}
                   <div className="ub-slot-legend">
                     <span>● Tanlangan</span>
                     <span>○ Bo'sh</span>
