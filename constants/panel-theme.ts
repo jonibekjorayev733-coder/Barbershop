@@ -1,0 +1,21 @@
+export const panelTheme = {
+  surface: "#ffffff",
+  page: "#f8fafc",
+  heading: "#0f172a",
+  text: "#334155",
+  muted: "#64748b",
+  border: "#e2e8f0",
+  dark: "#0f172a",
+  blue: "#2563eb",
+  green: "#059669",
+  amber: "#d97706",
+  red: "#dc2626",
+  teal: "#0f766e",
+  radius: {
+    sm: 12,
+    md: 16,
+    lg: 18,
+    xl: 22,
+    pill: 999,
+  },
+} as const;
