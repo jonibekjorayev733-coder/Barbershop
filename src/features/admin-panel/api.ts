@@ -133,7 +133,7 @@ export interface BarberAppointmentApi {
   client_phone: string;
   appointment_time: string;
   appointment_date: string;
-  status: "pending" | "completed" | "cancelled";
+  status: "pending" | "completed" | "cancelled" | "accepted" | "rated";
   service_name?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -253,7 +253,7 @@ export interface UserBookingConfirmationApi {
   service_price?: number | null;
   discount_percent?: number;
   created_at?: string;
-  status: "pending" | "completed" | "cancelled";
+  status: "pending" | "completed" | "cancelled" | "accepted" | "rated";
 }
 
 export interface AdminBookingApi {
@@ -265,7 +265,7 @@ export interface AdminBookingApi {
   price: number;
   time: string;
   date: string;
-  status: "pending" | "completed" | "cancelled";
+  status: "pending" | "completed" | "cancelled" | "accepted" | "rated";
 }
 
 export type BarberApiStatus = "available" | "busy" | "off";
@@ -611,7 +611,7 @@ export async function createUserBooking(payload: UserBookingCreatePayload): Prom
   });
 }
 
-export async function getBookings(options?: { date?: string; status?: "all" | "pending" | "completed" | "cancelled" }): Promise<AdminBookingApi[]> {
+export async function getBookings(options?: { date?: string; status?: "all" | "pending" | "completed" | "cancelled" | "accepted" | "rated" }): Promise<AdminBookingApi[]> {
   const params = new URLSearchParams();
   if (options?.date) {
     params.set("date", options.date);

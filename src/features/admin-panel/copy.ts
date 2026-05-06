@@ -4,6 +4,8 @@ export const bookingStatusLabel: Record<BookingStatus, string> = {
   completed: "yakunlangan",
   pending: "kutilmoqda",
   cancelled: "bekor qilingan",
+  accepted: "jarayonda",
+  rated: "baholangan",
 };
 
 export const barberStatusLabel: Record<BarberStatus, string> = {
@@ -17,6 +19,8 @@ export const bookingFilterLabels: Record<"all" | BookingStatus, string> = {
   completed: "Yakunlangan",
   pending: "Kutilmoqda",
   cancelled: "Bekor qilingan",
+  accepted: "Jarayonda",
+  rated: "Baholangan",
 };
 
 export const topCopy = {
