@@ -40,6 +40,18 @@ export interface AdminProfileUpdatePayload {
   avatar?: string | null;
 }
 
+export interface AppSupportConfigApi {
+  call_center_phone: string;
+  telegram_username: string;
+  telegram_url: string;
+  email: string;
+  work_hours: string;
+  extra_hint: string;
+  updated_at?: string | null;
+}
+
+export type AppSupportConfigUpdatePayload = Partial<Omit<AppSupportConfigApi, "updated_at">>;
+
 export interface PhoneOtpRequestPayload {
   name?: string;
   phone: string;
@@ -481,6 +493,17 @@ export async function getAdminProfile(adminId: number): Promise<AdminProfileApi>
 
 export async function updateBarberProfile(barberId: number, payload: BarberProfileUpdatePayload): Promise<BarberProfileApi> {
   return requestJson<BarberProfileApi>(`/barbers/${barberId}/profile`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAppSupportConfig(): Promise<AppSupportConfigApi> {
+  return requestJson<AppSupportConfigApi>("/app/support-config");
+}
+
+export async function updateAppSupportConfig(adminId: number, payload: AppSupportConfigUpdatePayload): Promise<AppSupportConfigApi> {
+  return requestJson<AppSupportConfigApi>(`/admins/${adminId}/support-config`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });

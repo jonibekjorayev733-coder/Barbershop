@@ -1,4 +1,4 @@
-export type Page = "dashboard" | "barbers" | "bookings";
+export type Page = "dashboard" | "barbers" | "bookings" | "support";
 export type BookingStatus = "completed" | "pending" | "cancelled" | "accepted" | "rated";
 export type BarberStatus = "available" | "busy" | "off";
 

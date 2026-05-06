@@ -303,6 +303,79 @@ def today_tashkent_str() -> str:
     return datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d")
 
 
+APP_SUPPORT_CONFIG_NOTIFICATION_TYPE = "app_support_config"
+APP_SUPPORT_CONFIG_NOTIFICATION_USER_ID = 0
+DEFAULT_APP_SUPPORT_CONFIG = {
+    "call_center_phone": "+998 90 777 77 77",
+    "telegram_username": "@sharpcuts_support",
+    "telegram_url": "https://t.me/sharpcuts_support",
+    "email": "support@sharpcuts.uz",
+    "work_hours": "Dushanba - Yakshanba: 09:00 - 22:00",
+    "extra_hint": "Telegram va email orqali 24/7 xabar qoldirishingiz mumkin.",
+}
+
+
+def normalize_app_support_config(payload: dict) -> dict:
+    next_config = dict(DEFAULT_APP_SUPPORT_CONFIG)
+    for key, default_value in DEFAULT_APP_SUPPORT_CONFIG.items():
+        raw_value = payload.get(key)
+        if isinstance(raw_value, str) and raw_value.strip():
+            next_config[key] = raw_value.strip()
+        else:
+            next_config[key] = default_value
+
+    username = next_config["telegram_username"].strip()
+    if username and not username.startswith("@"):
+        username = f"@{username.lstrip('@')}"
+    next_config["telegram_username"] = username or DEFAULT_APP_SUPPORT_CONFIG["telegram_username"]
+
+    telegram_url = next_config["telegram_url"].strip()
+    if not telegram_url:
+        telegram_handle = next_config["telegram_username"].lstrip("@")
+        telegram_url = f"https://t.me/{telegram_handle}" if telegram_handle else DEFAULT_APP_SUPPORT_CONFIG["telegram_url"]
+    next_config["telegram_url"] = telegram_url
+
+    return next_config
+
+
+def read_app_support_config(db: Session) -> dict:
+    row = db.query(models.Notification).filter(
+        models.Notification.type == APP_SUPPORT_CONFIG_NOTIFICATION_TYPE,
+        models.Notification.user_id == APP_SUPPORT_CONFIG_NOTIFICATION_USER_ID,
+    ).order_by(models.Notification.id.desc()).first()
+
+    if row is None:
+        return {**DEFAULT_APP_SUPPORT_CONFIG, "updated_at": None}
+
+    parsed = {}
+    try:
+        parsed_candidate = json.loads(row.message or "{}")
+        if isinstance(parsed_candidate, dict):
+            parsed = parsed_candidate
+    except Exception:
+        parsed = {}
+
+    normalized = normalize_app_support_config(parsed)
+    normalized["updated_at"] = row.created_at
+    return normalized
+
+
+def write_app_support_config(db: Session, payload: dict) -> dict:
+    normalized = normalize_app_support_config(payload)
+    db_row = models.Notification(
+        user_id=APP_SUPPORT_CONFIG_NOTIFICATION_USER_ID,
+        title="App support config",
+        message=json.dumps(normalized, ensure_ascii=False),
+        type=APP_SUPPORT_CONFIG_NOTIFICATION_TYPE,
+        read=True,
+    )
+    db.add(db_row)
+    db.commit()
+    db.refresh(db_row)
+    normalized["updated_at"] = db_row.created_at
+    return normalized
+
+
 def schedule_realtime(channel: str, event: str, data: dict):
     event_id = str(uuid.uuid4())
     sent_at_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2651,6 +2724,37 @@ def get_admin_profile(admin_id: int, db: Session = Depends(get_db)):
     if db_admin is None:
         raise HTTPException(status_code=404, detail="Admin topilmadi")
     return db_admin
+
+
+@app.get("/app/support-config", response_model=schemas.AppSupportConfig)
+def get_app_support_config(db: Session = Depends(get_db)):
+    return read_app_support_config(db)
+
+
+@app.put("/admins/{admin_id}/support-config", response_model=schemas.AppSupportConfig)
+def update_app_support_config(
+    admin_id: int,
+    payload: schemas.AppSupportConfigUpdate,
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    role = (current_user.get("role") or "").strip().lower()
+    requester_id = int(current_user.get("user_id") or 0)
+    if role != "admin" or requester_id <= 0:
+        raise HTTPException(status_code=403, detail="Faqat admin support sozlamasini o'zgartira oladi")
+
+    target_admin = db.query(models.Admin).filter(models.Admin.id == admin_id).first()
+    if target_admin is None:
+        raise HTTPException(status_code=404, detail="Admin topilmadi")
+
+    current_config = read_app_support_config(db)
+    next_config = {
+        **current_config,
+        **payload.model_dump(exclude_none=True),
+    }
+    saved = write_app_support_config(db, next_config)
+    schedule_realtime("bookings", "app.support.updated", saved)
+    return saved
 
 # Courses
 @app.post("/courses/", response_model=schemas.Course)

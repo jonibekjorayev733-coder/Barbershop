@@ -1,5 +1,5 @@
 import type { Page } from "../types";
-import { ICal, IGrid, ILogout, ISciss, IUsers } from "../icons";
+import { IBell, ICal, IGrid, ILogout, ISciss, IUsers } from "../icons";
 
 interface SidebarProps {
   page: Page;
@@ -13,6 +13,7 @@ const navItems: Array<{ id: Page; label: string; icon: JSX.Element }> = [
   { id: "dashboard", label: "Bosh sahifa", icon: <IGrid /> },
   { id: "barbers", label: "Sartaroshlar", icon: <IUsers /> },
   { id: "bookings", label: "Bronlar", icon: <ICal /> },
+  { id: "support", label: "Support sozlamalari", icon: <IBell /> },
 ];
 
 export function Sidebar({ page, onChangePage, onLogout, adminName, adminAvatar }: SidebarProps) {

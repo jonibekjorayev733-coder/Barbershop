@@ -5,6 +5,7 @@ import "./panels-pro-v2.css";
 import { BarbersPage } from "./features/admin-panel/components/BarbersPage";
 import { BookingsPage } from "./features/admin-panel/components/BookingsPage";
 import { DashboardPage } from "./features/admin-panel/components/DashboardPage";
+import { SupportSettingsPage } from "./features/admin-panel/components/SupportSettingsPage";
 import { Sidebar } from "./features/admin-panel/components/Sidebar";
 import { Topbar } from "./features/admin-panel/components/Topbar";
 import {
@@ -354,6 +355,7 @@ export default function App() {
           {page === "dashboard" && <DashboardPage onNavigate={setPage} />}
           {page === "barbers" && <BarbersPage />}
           {page === "bookings" && <BookingsPage />}
+          {page === "support" && <SupportSettingsPage adminId={session.userId} />}
         </main>
       </div>
     </div>

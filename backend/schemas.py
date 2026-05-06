@@ -28,6 +28,25 @@ class Admin(AdminBase):
     class Config: from_attributes = True
 
 
+class AppSupportConfig(BaseModel):
+    call_center_phone: str
+    telegram_username: str
+    telegram_url: str
+    email: str
+    work_hours: str
+    extra_hint: str
+    updated_at: Optional[datetime] = None
+
+
+class AppSupportConfigUpdate(BaseModel):
+    call_center_phone: Optional[str] = None
+    telegram_username: Optional[str] = None
+    telegram_url: Optional[str] = None
+    email: Optional[str] = None
+    work_hours: Optional[str] = None
+    extra_hint: Optional[str] = None
+
+
 class BarberProfileUpdate(BaseModel):
     name: str
     email: str
