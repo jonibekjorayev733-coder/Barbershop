@@ -1,5 +1,5 @@
 export type Page = "dashboard" | "barbers" | "bookings";
-export type BookingStatus = "completed" | "pending" | "cancelled";
+export type BookingStatus = "completed" | "pending" | "cancelled" | "accepted" | "rated";
 export type BarberStatus = "available" | "busy" | "off";
 
 export interface Barber {
