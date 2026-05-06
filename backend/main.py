@@ -865,6 +865,13 @@ def normalize_phone(phone: Optional[str]) -> str:
     return "".join(ch for ch in str(phone) if ch.isdigit())
 
 
+def to_twilio_phone(phone: Optional[str]) -> str:
+    normalized = normalize_phone(phone)
+    if not normalized:
+        return ""
+    return normalized if normalized.startswith("+") else f"+{normalized}"
+
+
 def generate_phone_otp_code() -> str:
     return f"{random.randint(0, 999999):06d}"
 
@@ -1017,16 +1024,17 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
     if use_twilio:
         try:
             client = TwilioClient(twilio_sid, twilio_token)
+            twilio_phone = to_twilio_phone(normalized_phone)
             verification = (
                 client.verify.v2
                 .services(twilio_vsid)
                 .verifications
-                .create(to=normalized_phone, channel="sms")
+                .create(to=twilio_phone, channel="sms")
             )
             if verification.status not in ("pending", "approved"):
                 raise Exception(f"unexpected status: {verification.status}")
             otp_code = "TWILIO_VERIFY"  # marker — actual code managed by Twilio
-            print(f"[Twilio] Verification sent to {normalized_phone}")
+            print(f"[Twilio] Verification sent to {twilio_phone}")
         except Exception as exc:
             print(f"[Twilio] send failed: {exc}, falling back to local OTP")
             use_twilio = False
@@ -1119,11 +1127,12 @@ def verify_phone_otp_and_login(db: Session, phone: str, code: str, name: Optiona
             raise HTTPException(status_code=503, detail="Twilio sozlanmagan")
         try:
             client = TwilioClient(twilio_sid, twilio_token)
+            twilio_phone = to_twilio_phone(normalized_phone)
             result = (
                 client.verify.v2
                 .services(twilio_vsid)
                 .verification_checks
-                .create(to=normalized_phone, code=normalized_code)
+                .create(to=twilio_phone, code=normalized_code)
             )
             if result.status != "approved":
                 db.execute(text("UPDATE phone_otp_auth SET attempts = COALESCE(attempts, 0) + 1 WHERE id = :id"), {"id": row["id"]})
