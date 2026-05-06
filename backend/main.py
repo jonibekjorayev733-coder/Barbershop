@@ -862,25 +862,57 @@ def build_login_response(user_id: int, role: str, name: str, email: Optional[str
     }
 
 
+def normalized_phone_column(column):
+    expression = func.coalesce(column, "")
+    for token in (" ", "+", "-", "(", ")"):
+        expression = func.replace(expression, token, "")
+    return expression
+
+
+def find_by_normalized_email(db: Session, model, column_name: str, normalized_value: str):
+    if not normalized_value:
+        return None
+
+    column = getattr(model, column_name)
+    try:
+        exact_match = db.query(model).filter(column == normalized_value).first()
+        if exact_match:
+            return exact_match
+        return db.query(model).filter(func.lower(column) == normalized_value).first()
+    except SQLAlchemyError:
+        return None
+
+
+def find_by_normalized_phone(db: Session, model, column_name: str, normalized_value: str):
+    if not normalized_value:
+        return None
+
+    column = getattr(model, column_name)
+    try:
+        direct_match = db.query(model).filter(column == normalized_value).first()
+        if direct_match:
+            return direct_match
+        return db.query(model).filter(normalized_phone_column(column) == normalized_value).first()
+    except SQLAlchemyError:
+        return None
+
+
 def find_identity_by_phone(db: Session, phone: str):
     normalized_target = normalize_phone(phone)
     if not normalized_target:
         return None, None
 
-    admins = db.query(models.Admin).all()
-    for admin in admins:
-        if normalize_phone(getattr(admin, "phone", None)) == normalized_target:
-            return "admin", admin
+    admin = find_by_normalized_phone(db, models.Admin, "phone", normalized_target)
+    if admin:
+        return "admin", admin
 
-    barbers = db.query(models.Barber).all()
-    for barber in barbers:
-        if normalize_phone(barber.phone) == normalized_target:
-            return "barber", barber
+    barber = find_by_normalized_phone(db, models.Barber, "phone", normalized_target)
+    if barber:
+        return "barber", barber
 
-    students = db.query(models.Student).all()
-    for student in students:
-        if normalize_phone(student.phone) == normalized_target:
-            return "student", student
+    student = find_by_normalized_phone(db, models.Student, "phone", normalized_target)
+    if student:
+        return "student", student
 
     return None, None
 
@@ -2001,6 +2033,14 @@ def ensure_legacy_schema_compatibility():
             created_at TIMESTAMP DEFAULT NOW()
         )
         """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_phone_otp_auth_phone_active
+        ON phone_otp_auth (phone, is_used, created_at DESC)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_phone_otp_auth_phone_code_active
+        ON phone_otp_auth (phone, code, is_used)
+        """,
     ]
 
     try:
@@ -2290,10 +2330,10 @@ def register_user(payload: schemas.RegisterUserRequest, db: Session = Depends(ge
     if password_error:
         raise HTTPException(status_code=400, detail=password_error)
 
-    existing_student = db.query(models.Student).filter(func.lower(models.Student.email) == normalized_email).first()
-    existing_admin = db.query(models.Admin).filter(func.lower(models.Admin.email) == normalized_email).first()
-    existing_teacher = db.query(models.Teacher).filter(func.lower(models.Teacher.email) == normalized_email).first()
-    existing_barber = db.query(models.Barber).filter(func.lower(models.Barber.username) == normalized_email).first()
+    existing_student = find_by_normalized_email(db, models.Student, "email", normalized_email)
+    existing_admin = find_by_normalized_email(db, models.Admin, "email", normalized_email)
+    existing_teacher = find_by_normalized_email(db, models.Teacher, "email", normalized_email)
+    existing_barber = find_by_normalized_email(db, models.Barber, "username", normalized_email)
     if existing_student or existing_admin or existing_teacher or existing_barber:
         raise HTTPException(status_code=400, detail="Bu email allaqachon ro'yxatdan o'tgan")
 
@@ -2319,11 +2359,7 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     normalized_password = login_payload.password.strip()
 
     # Check admin
-    db_admin = None
-    try:
-        db_admin = db.query(models.Admin).filter(func.lower(models.Admin.email) == normalized_email).first()
-    except SQLAlchemyError:
-        db_admin = None
+    db_admin = find_by_normalized_email(db, models.Admin, "email", normalized_email)
 
     if db_admin and verify_password(normalized_password, db_admin.password):
         admin_role = (db_admin.role or "admin").strip().lower()
@@ -2331,10 +2367,16 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     
     # Check teacher (handle legacy duplicate-case emails safely)
     db_teachers = []
+    primary_teacher = find_by_normalized_email(db, models.Teacher, "email", normalized_email)
+    if primary_teacher:
+        db_teachers.append(primary_teacher)
+
     try:
-        db_teachers = db.query(models.Teacher).filter(func.lower(models.Teacher.email) == normalized_email).all()
+        for duplicate_teacher in db.query(models.Teacher).filter(func.lower(models.Teacher.email) == normalized_email).all():
+            if all(item.id != duplicate_teacher.id for item in db_teachers):
+                db_teachers.append(duplicate_teacher)
     except SQLAlchemyError:
-        db_teachers = []
+        pass
 
     for db_teacher in db_teachers:
         teacher_password_valid = False
@@ -2354,17 +2396,13 @@ def login(login_payload: schemas.LoginRequest, db: Session = Depends(get_db)):
             return build_login_response(db_teacher.id, teacher_role, db_teacher.name, db_teacher.email, db_teacher.avatar)
     
     # Check student
-    db_student = None
-    try:
-        db_student = db.query(models.Student).filter(func.lower(models.Student.email) == normalized_email).first()
-    except SQLAlchemyError:
-        db_student = None
+    db_student = find_by_normalized_email(db, models.Student, "email", normalized_email)
 
     if db_student and verify_password(normalized_password, db_student.password):
         student_role = (db_student.role or "student").strip().lower()
         return build_login_response(db_student.id, student_role, db_student.name, db_student.email, db_student.avatar, db_student.phone)
 
-    db_barber = db.query(models.Barber).filter(func.lower(models.Barber.username) == normalized_email).first()
+    db_barber = find_by_normalized_email(db, models.Barber, "username", normalized_email)
     if db_barber:
         barber_password_valid = False
         if db_barber.password:
