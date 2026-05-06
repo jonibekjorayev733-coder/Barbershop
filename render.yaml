@@ -15,6 +15,12 @@ services:
         scope: runtime
       - key: STRIPE_SECRET_KEY
         scope: runtime
+      - key: TWILIO_ACCOUNT_SID
+        scope: runtime
+      - key: TWILIO_AUTH_TOKEN
+        scope: runtime
+      - key: TWILIO_VERIFY_SERVICE_SID
+        scope: runtime
 
   # Frontend static service
   - type: static_site
