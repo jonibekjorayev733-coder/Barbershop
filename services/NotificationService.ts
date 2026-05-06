@@ -13,8 +13,16 @@ type NotificationsModule = any;
 let notificationsModule: NotificationsModule | null = null;
 let notificationHandlerConfigured = false;
 
+function isExpoGoClient(): boolean {
+  const ownership = (Constants as { appOwnership?: string | null }).appOwnership;
+  const executionEnvironment = (Constants as { executionEnvironment?: string | null }).executionEnvironment;
+
+  return ownership === "expo" || executionEnvironment === "storeClient";
+}
+
 async function getNotificationsModule(): Promise<NotificationsModule | null> {
   if (Platform.OS === "web") return null;
+  if (isExpoGoClient()) return null;
   if (notificationsModule) return notificationsModule;
 
   try {

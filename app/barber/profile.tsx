@@ -483,18 +483,16 @@ export default function BarberProfileScreen() {
         <Section title="Lokatsiya" icon="location-outline">
           {lat && lng ? (
             <TouchableOpacity onPress={() => setShowMap(true)} activeOpacity={0.85} style={s.mapPreview}>
-              <MapView
+              <LinearGradient
+                colors={["#111827", "#1f2937"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={s.mapPreviewMap}
-                region={{ latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                pitchEnabled={false}
-                rotateEnabled={false}
-                userInterfaceStyle="dark"
-                pointerEvents="none"
               >
-                <Marker coordinate={{ latitude: lat, longitude: lng }} pinColor={colors.goldAlt} />
-              </MapView>
+                <Ionicons name="location" size={22} color={colors.goldAlt} />
+                <Text style={s.mapPreviewTitle}>Joylashuv saqlangan</Text>
+                <Text style={s.mapPreviewAddress} numberOfLines={2}>{address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`}</Text>
+              </LinearGradient>
               <View style={s.mapPreviewOverlay}>
                 <Ionicons name="pencil" size={14} color="#fff" />
                 <Text style={s.mapPreviewEdit}>O'zgartirish</Text>
@@ -696,7 +694,15 @@ const s = StyleSheet.create({
   divider: { height: 1, backgroundColor: card.border, marginVertical: spacing.sm },
 
   mapPreview: { borderRadius: radii.md, overflow: "hidden", height: 140, marginBottom: spacing.sm, position: "relative" },
-  mapPreviewMap: { ...StyleSheet.absoluteFillObject },
+  mapPreviewMap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  mapPreviewTitle: { ...typography.body, color: colors.text, fontWeight: "700" },
+  mapPreviewAddress: { ...typography.caption, color: colors.textSecondary, maxWidth: "88%" },
   mapPreviewOverlay: {
     position: "absolute",
     bottom: 8,
