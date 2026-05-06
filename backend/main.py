@@ -27,6 +27,11 @@ except ImportError:  # pragma: no cover
     redis = None
 
 try:
+    from twilio.rest import Client as TwilioClient
+except ImportError:  # pragma: no cover
+    TwilioClient = None
+
+try:
     import models, schemas
     from database import engine, get_db
     from auth import hash_password, verify_password, create_access_token, decode_access_token
@@ -61,9 +66,15 @@ PHONE_OTP_DEBUG = os.getenv("PHONE_OTP_DEBUG", "false").strip().lower() in {"1",
 
 
 def is_sms_provider_configured() -> bool:
+    has_twilio = bool(
+        TwilioClient
+        and os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+        and os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+        and os.getenv("TWILIO_VERIFY_SERVICE_SID", "").strip()
+    )
     has_eskiz = bool(os.getenv("ESKIZ_EMAIL", "").strip() and os.getenv("ESKIZ_PASSWORD", "").strip())
     has_webhook = bool(os.getenv("SMS_API_URL", "").strip())
-    return has_eskiz or has_webhook
+    return has_twilio or has_eskiz or has_webhook
 
 
 def effective_phone_otp_debug() -> bool:
@@ -798,7 +809,27 @@ def send_sms_via_webhook(phone: Optional[str], message: str) -> bool:
     if not phone:
         return False
 
-    # --- Try Eskiz.uz first ---
+    # --- Try Twilio Verify first ---
+    twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+    twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+    twilio_vsid = os.getenv("TWILIO_VERIFY_SERVICE_SID", "").strip()
+    if TwilioClient and twilio_sid and twilio_token and twilio_vsid:
+        try:
+            client = TwilioClient(twilio_sid, twilio_token)
+            verification = (
+                client.verify.v2
+                .services(twilio_vsid)
+                .verifications
+                .create(to=phone, channel="sms")
+            )
+            if verification.status in ("pending", "approved"):
+                print(f"[Twilio] OTP sent to {phone}, status={verification.status}")
+                return True
+            print(f"[Twilio] unexpected status: {verification.status}")
+        except Exception as exc:
+            print(f"[Twilio] send failed: {exc}, falling back to Eskiz")
+
+    # --- Try Eskiz.uz second ---
     if os.getenv("ESKIZ_EMAIL", "").strip() and os.getenv("ESKIZ_PASSWORD", "").strip():
         token = _eskiz_get_token()
         if token:
@@ -976,6 +1007,33 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
         "now_value": now_value,
         "phone": normalized_phone,
     })
+
+    # --- Twilio Verify: let Twilio manage the code ---
+    twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+    twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+    twilio_vsid = os.getenv("TWILIO_VERIFY_SERVICE_SID", "").strip()
+    use_twilio = bool(TwilioClient and twilio_sid and twilio_token and twilio_vsid)
+
+    if use_twilio:
+        try:
+            client = TwilioClient(twilio_sid, twilio_token)
+            verification = (
+                client.verify.v2
+                .services(twilio_vsid)
+                .verifications
+                .create(to=normalized_phone, channel="sms")
+            )
+            if verification.status not in ("pending", "approved"):
+                raise Exception(f"unexpected status: {verification.status}")
+            otp_code = "TWILIO_VERIFY"  # marker — actual code managed by Twilio
+            print(f"[Twilio] Verification sent to {normalized_phone}")
+        except Exception as exc:
+            print(f"[Twilio] send failed: {exc}, falling back to local OTP")
+            use_twilio = False
+            otp_code = generate_phone_otp_code()
+    else:
+        otp_code = generate_phone_otp_code()
+
     db.execute(
         text(
             """
@@ -994,7 +1052,10 @@ def save_phone_otp_request(db: Session, phone: str, name: Optional[str]) -> dict
     db.commit()
 
     otp_debug_mode = effective_phone_otp_debug()
-    sent = send_sms_via_webhook(normalized_phone, f"Sharp Cuts tasdiqlash kodi: {otp_code}. Kod {PHONE_OTP_EXPIRY_SECONDS // 60} daqiqa amal qiladi.")
+    if use_twilio:
+        sent = True  # already sent via Twilio Verify above
+    else:
+        sent = send_sms_via_webhook(normalized_phone, f"Sharp Cuts tasdiqlash kodi: {otp_code}. Kod {PHONE_OTP_EXPIRY_SECONDS // 60} daqiqa amal qiladi.")
     if not sent and not otp_debug_mode:
         db.execute(
             text(
@@ -1049,7 +1110,31 @@ def verify_phone_otp_and_login(db: Session, phone: str, code: str, name: Optiona
     if row.get("expires_at") and isinstance(row["expires_at"], datetime) and row["expires_at"] < now_value:
         raise HTTPException(status_code=400, detail="SMS kod muddati tugagan")
 
-    if str(row.get("code") or "") != normalized_code:
+    # --- Twilio Verify check ---
+    if str(row.get("code") or "") == "TWILIO_VERIFY":
+        twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+        twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+        twilio_vsid = os.getenv("TWILIO_VERIFY_SERVICE_SID", "").strip()
+        if not (TwilioClient and twilio_sid and twilio_token and twilio_vsid):
+            raise HTTPException(status_code=503, detail="Twilio sozlanmagan")
+        try:
+            client = TwilioClient(twilio_sid, twilio_token)
+            result = (
+                client.verify.v2
+                .services(twilio_vsid)
+                .verification_checks
+                .create(to=normalized_phone, code=normalized_code)
+            )
+            if result.status != "approved":
+                db.execute(text("UPDATE phone_otp_auth SET attempts = COALESCE(attempts, 0) + 1 WHERE id = :id"), {"id": row["id"]})
+                db.commit()
+                raise HTTPException(status_code=400, detail="SMS kodi noto'g'ri")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            print(f"[Twilio] verify failed: {exc}")
+            raise HTTPException(status_code=503, detail="Twilio tekshiruv xatoligi")
+    elif str(row.get("code") or "") != normalized_code:
         db.execute(text("UPDATE phone_otp_auth SET attempts = COALESCE(attempts, 0) + 1 WHERE id = :id"), {"id": row["id"]})
         db.commit()
         raise HTTPException(status_code=400, detail="SMS kodi noto'g'ri")
