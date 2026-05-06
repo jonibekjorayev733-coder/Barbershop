@@ -26,6 +26,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [smsCode, setSmsCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpHint, setOtpHint] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -196,18 +198,25 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </label>
               <label>
                 <span>Parol *</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "register" ? "Kamida 6 ta belgi" : "Parolingiz"}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={mode === "register" ? "Kamida 6 ta belgi" : "Parolingiz"}
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }}
+                  />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showPassword ? "🙈" : "👁"}</button>
+                </div>
               </label>
               {mode === "register" ? (
                 <label>
                   <span>Parolni tasdiqlang *</span>
-                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Parolni qayta kiriting" autoComplete="new-password" />
+                  <div style={{ position: "relative" }}>
+                    <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Parolni qayta kiriting" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                    <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showConfirmPassword ? "🙈" : "👁"}</button>
+                  </div>
                 </label>
               ) : null}
             </div>

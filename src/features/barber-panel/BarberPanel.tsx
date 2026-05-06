@@ -2,6 +2,7 @@
 import { FiBell, FiCalendar, FiClock, FiMapPin, FiScissors, FiSettings, FiUser } from "react-icons/fi";
 import {
   approveBarberAppointment,
+  completeBarberAppointment,
   getBarberAppointments,
   getBarberDashboard,
   getBarberNotifications,
@@ -30,7 +31,7 @@ interface BarberPanelProps {
 }
 
 type BarberView = "dashboard" | "schedule" | "profile" | "notifications";
-type ScheduleFilter = "all" | "pending" | "completed";
+type ScheduleFilter = "all" | "pending" | "accepted" | "completed";
 
 interface SmsOverlayItem {
   id: number;
@@ -84,6 +85,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
   const [profName, setProfName] = useState(barberName);
   const [profEmail, setProfEmail] = useState(barberEmail);
   const [profPassword, setProfPassword] = useState("");
+  const [showProfPassword, setShowProfPassword] = useState(false);
   const [profSpecialty, setProfSpecialty] = useState("");
   const [profDirections, setProfDirections] = useState("");
   const [profServicePrice, setProfServicePrice] = useState("");
@@ -235,7 +237,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
-      if (!["booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
+      if (!["booking.created", "booking.completed", "booking.cancelled", "booking.accepted", "booking.rated"].includes(payload.event)) {
         return;
       }
 
@@ -387,6 +389,19 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
       await Promise.all([loadDashboard(), loadAppointments(filter)]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Bron rad etilmadi.");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const completeAppointment = async (appointmentId: number) => {
+    try {
+      setIsUpdating(appointmentId);
+      setErrorMessage(null);
+      await completeBarberAppointment(barberId, appointmentId);
+      await Promise.all([loadDashboard(), loadAppointments(filter)]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Bron yakunlanmadi.");
     } finally {
       setIsUpdating(null);
     }
@@ -592,7 +607,10 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                   ) : null}
                 </div>
                 <label className="barber-field"><span>Yangi parol (ixtiyoriy)</span>
-                  <input type="password" value={profPassword} onChange={(event) => setProfPassword(event.target.value)} placeholder="Yangi parol" autoComplete="new-password" />
+                  <div style={{ position: "relative" }}>
+                    <input type={showProfPassword ? "text" : "password"} value={profPassword} onChange={(event) => setProfPassword(event.target.value)} placeholder="Yangi parol" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                    <button type="button" onClick={() => setShowProfPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showProfPassword ? "🙈" : "👁"}</button>
+                  </div>
                 </label>
 
                 <div className="barber-form-actions">
@@ -733,12 +751,19 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                       </div>
                       {item.status === "completed" ? (
                         <em className="bp-chip done">Tasdiqlangan</em>
+                      ) : item.status === "accepted" ? (
+                        <div className="bp-inline-actions">
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS</button>
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void completeAppointment(item.id)}>Tugatish</button>
+                          <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
+                        </div>
                       ) : item.status === "cancelled" ? (
                         <em className="bp-chip pending">Rad etilgan</em>
                       ) : (
                         <div className="bp-inline-actions">
                           <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS</button>
                           <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void completeAppointment(item.id)}>Tugatish</button>
                           <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
                         </div>
                       )}
@@ -766,6 +791,7 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                 <div className="bp-filter-row">
                   <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Barchasi</button>
                   <button className={filter === "pending" ? "active" : ""} onClick={() => setFilter("pending")}>Kutilmoqda</button>
+                  <button className={filter === "accepted" ? "active" : ""} onClick={() => setFilter("accepted")}>Jarayonda</button>
                   <button className={filter === "completed" ? "active" : ""} onClick={() => setFilter("completed")}>Tasdiqlangan</button>
                 </div>
 
@@ -775,7 +801,15 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                       <div className="bp-schedule-top">
                         <strong>{item.client_name}</strong>
                       <span className={`bp-chip ${item.status === "completed" ? "done" : "pending"}`}>
-                        {item.status === "completed" ? "Tasdiqlangan" : item.status === "cancelled" ? "Rad etilgan" : "Kutilmoqda"}
+                        {item.status === "completed"
+                          ? "Tasdiqlangan"
+                          : item.status === "accepted"
+                            ? "Jarayonda"
+                            : item.status === "cancelled"
+                              ? "Rad etilgan"
+                              : item.status === "rated"
+                                ? "Baholangan"
+                                : "Kutilmoqda"}
                       </span>
                     </div>
                     <div className="bp-schedule-sub">#{item.id.toString().padStart(4, "0")}</div>
@@ -792,14 +826,21 @@ export function BarberPanel({ barberId, barberName, barberEmail = "", barberAvat
                           })
                         : "-"} (Toshkent)
                     </div>
-                    {item.status === "pending" ? (
+                    {item.status === "completed" ? (
+                      <div className="bp-done-note">Bron yakunlangan</div>
+                    ) : item.status === "cancelled" ? (
+                      <div className="bp-done-note">Bron rad etilgan</div>
+                    ) : item.status === "rated" ? (
+                      <div className="bp-done-note">Bron baholangan</div>
+                    ) : (
                       <div className="bp-inline-actions">
                         <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void sendClientSms(item.id)}>SMS yuborish</button>
-                        <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                        {item.status !== "accepted" ? (
+                          <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void approveAppointment(item.id)}>Tasdiqlash</button>
+                        ) : null}
+                        <button className="bp-chip action" disabled={isUpdating === item.id} onClick={() => void completeAppointment(item.id)}>Tugatish</button>
                         <button className="bp-chip action danger" disabled={isUpdating === item.id} onClick={() => void rejectAppointment(item.id)}>Rad etish</button>
                       </div>
-                    ) : (
-                      <div className="bp-done-note">{item.status === "completed" ? "Bron tasdiqlangan" : "Bron rad etilgan"}</div>
                     )}
                   </article>
                 ))}

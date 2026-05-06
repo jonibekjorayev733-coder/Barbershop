@@ -148,6 +148,7 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
   const [profName, setProfName] = useState(userName);
   const [profEmail, setProfEmail] = useState(userEmail);
   const [profPassword, setProfPassword] = useState("");
+  const [showProfPassword, setShowProfPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userAvatar ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [profileToast, setProfileToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -749,13 +750,10 @@ export function UserPanel({ userId, userName, userEmail = "", userAvatar, prefer
                 </label>
                 <label className="barber-field">
                   <span>Yangi parol (ixtiyoriy)</span>
-                  <input
-                    type="password"
-                    value={profPassword}
-                    onChange={(e) => setProfPassword(e.target.value)}
-                    placeholder="Yangi parol"
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input type={showProfPassword ? "text" : "password"} value={profPassword} onChange={(e) => setProfPassword(e.target.value)} placeholder="Yangi parol" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                    <button type="button" onClick={() => setShowProfPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showProfPassword ? "🙈" : "👁"}</button>
+                  </div>
                 </label>
                 <div className="barber-form-actions">
                   <button type="button" className="ba-sec" onClick={() => setView("booking")} disabled={isSaving}>Ortga</button>

@@ -38,6 +38,8 @@ export function PublicLandingPage({ onLogin }: PublicLandingPageProps) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const loadShops = useCallback(async () => {
     try {
@@ -274,18 +276,18 @@ export function PublicLandingPage({ onLogin }: PublicLandingPageProps) {
             </label>
             <label>
               <span>Parol</span>
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Parol" autoComplete="current-password" />
+              <div style={{ position: "relative" }}>
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Parol" autoComplete="current-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showPassword ? "🙈" : "👁"}</button>
+              </div>
             </label>
             {authMode === "register" ? (
               <label>
                 <span>Parolni tasdiqlash</span>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Parolni qayta kiriting"
-                  autoComplete="new-password"
-                />
+                <div style={{ position: "relative" }}>
+                  <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Parolni qayta kiriting" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                  <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showConfirmPassword ? "🙈" : "👁"}</button>
+                </div>
               </label>
             ) : null}
 

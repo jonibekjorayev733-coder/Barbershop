@@ -114,6 +114,7 @@ export function BarbersPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<BarberFormState>(emptyForm);
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BarberApi | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -169,7 +170,7 @@ export function BarbersPage() {
 
   useEffect(() => {
     const unsubscribe = subscribeRealtimeChannel("bookings", (payload) => {
-      if (!["barber.profile.updated", "barber.rating.updated", "barber.admin.created", "barber.admin.updated", "barber.admin.deleted", "booking.created", "booking.completed", "booking.cancelled"].includes(payload.event)) {
+      if (!["barber.profile.updated", "barber.rating.updated", "barber.discount.updated", "barber.admin.created", "barber.admin.updated", "barber.admin.deleted", "booking.created", "booking.accepted", "booking.completed", "booking.cancelled", "booking.rated"].includes(payload.event)) {
         return;
       }
 
@@ -493,12 +494,10 @@ export function BarbersPage() {
 
                 <label className="barber-field">
                   <span>Parol (Password)</span>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                    placeholder={isEditing ? "Bo'sh qoldirsangiz o'zgarmaydi" : "Masalan: cut123"}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input type={showFormPassword ? "text" : "password"} value={form.password} onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))} placeholder={isEditing ? "Bo'sh qoldirsangiz o'zgarmaydi" : "Masalan: cut123"} style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                    <button type="button" onClick={() => setShowFormPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showFormPassword ? "🙈" : "👁"}</button>
+                  </div>
                 </label>
               </div>
 

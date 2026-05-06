@@ -24,6 +24,7 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
   const [email, setEmail] = useState(adminEmail);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(adminAvatar ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -223,13 +224,10 @@ export function Topbar({ adminId, adminName, adminEmail, adminAvatar, onProfileU
 
               <label className="barber-field">
                 <span>Yangi parol (ixtiyoriy)</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Parolni yangilash uchun kiriting"
-                  autoComplete="new-password"
-                />
+                <div style={{ position: "relative" }}>
+                  <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Parolni yangilash uchun kiriting" autoComplete="new-password" style={{ width: "100%", paddingRight: "40px", boxSizing: "border-box" }} />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#64748b", fontSize: 16 }} tabIndex={-1} aria-label="Parolni ko'rsatish">{showPassword ? "🙈" : "👁"}</button>
+                </div>
               </label>
 
               <div className="barber-form-actions">

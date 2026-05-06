@@ -742,6 +742,7 @@ def appointment_realtime_payload(appointment: models.BarberAppointment, barber_n
         "appointment_id": appointment.id,
         "booking_id": format_booking_code(appointment.id),
         "barber_id": appointment.barber_id,
+        "student_id": appointment.student_id,
         "barber_name": barber_name,
         "client_name": appointment.client_name,
         "appointment_date": appointment.appointment_date,
@@ -751,6 +752,50 @@ def appointment_realtime_payload(appointment: models.BarberAppointment, barber_n
         "created_at": appointment.created_at.isoformat() if appointment.created_at else None,
         "updated_at": appointment.updated_at.isoformat() if appointment.updated_at else None,
     }
+
+
+def user_notification_payload(notification: models.UserNotification) -> dict:
+    return {
+        "id": notification.id,
+        "type": notification.notification_type,
+        "title": notification.title,
+        "message": notification.message,
+        "barber_id": notification.barber_id,
+        "appointment_id": notification.appointment_id,
+        "sms_sent": bool(notification.sms_sent),
+        "voice_sent": bool(notification.voice_sent),
+        "is_read": bool(notification.is_read),
+        "created_at": notification.created_at.isoformat() if notification.created_at else None,
+    }
+
+
+def create_and_push_user_notification(
+    db: Session,
+    *,
+    user_id: int,
+    notification_type: str,
+    title: str,
+    message: str,
+    barber_id: Optional[int] = None,
+    appointment_id: Optional[int] = None,
+    sms_sent: bool = False,
+) -> models.UserNotification:
+    notification = models.UserNotification(
+        user_id=user_id,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        barber_id=barber_id,
+        appointment_id=appointment_id,
+        sms_sent=sms_sent,
+        voice_sent=False,
+        is_read=False,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    push_notification_realtime(user_id, user_notification_payload(notification))
+    return notification
 
 
 def _eskiz_get_token() -> Optional[str]:
@@ -3226,6 +3271,25 @@ def update_barber_profile(barber_id: int, payload: schemas.BarberProfileUpdate, 
                 "created_at": discount_notification.created_at.isoformat() if discount_notification.created_at else None,
             },
         )
+        schedule_realtime(
+            "bookings",
+            "barber.discount.updated",
+            {
+                "barber_id": db_barber.id,
+                "name": db_barber.name,
+                "discount_percent": updated_discount,
+                "service_price": get_barber_service_price(db_barber, db_barber.specialty),
+            },
+        )
+        schedule_realtime(
+            f"barber:{db_barber.id}",
+            "barber.discount.updated",
+            {
+                "barber_id": db_barber.id,
+                "discount_percent": updated_discount,
+                "service_price": get_barber_service_price(db_barber, db_barber.specialty),
+            },
+        )
 
     return {
         "id": db_barber.id,
@@ -3320,7 +3384,7 @@ def get_barber_appointments(
         models.BarberAppointment.barber_id == barber_id,
         models.BarberAppointment.appointment_date == target_date,
     )
-    if status_filter in {"pending", "completed"}:
+    if status_filter in {"pending", "accepted", "completed", "cancelled", "rated"}:
         query = query.filter(models.BarberAppointment.status == status_filter)
 
     return query.order_by(models.BarberAppointment.id.asc()).all()
@@ -3724,6 +3788,19 @@ def complete_barber_appointment(barber_id: int, appointment_id: int, db: Session
     completion_event_payload = appointment_realtime_payload(appointment, db_barber.name if db_barber else None)
     schedule_realtime("bookings", "booking.completed", completion_event_payload)
     schedule_realtime(f"barber:{barber_id}", "booking.completed", completion_event_payload)
+
+    if appointment.student_id:
+        msg = f"Xizmatingiz yakunlandi: {db_barber.name if db_barber else 'Sartarosh'} · {appointment.appointment_date} {appointment.appointment_time}"
+        create_and_push_user_notification(
+            db,
+            user_id=int(appointment.student_id),
+            notification_type="booking_completed",
+            title="Bron yakunlandi",
+            message=msg,
+            barber_id=barber_id,
+            appointment_id=appointment_id,
+            sms_sent=False,
+        )
     return appointment
 
 
@@ -3753,8 +3830,19 @@ def reject_barber_appointment(barber_id: int, appointment_id: int, db: Session =
     # Send SMS to user
     if appointment.student_id:
         user = db.query(models.Student).filter(models.Student.id == appointment.student_id).first()
+        sms_sent = False
         if user and user.phone:
-            send_sms_via_webhook(user.phone, f"Kechirasiz, sartarosh {db_barber.name if db_barber else 'Unknown'} sizning broningizni rad etdi.")
+            sms_sent = send_sms_via_webhook(user.phone, f"Kechirasiz, sartarosh {db_barber.name if db_barber else 'Unknown'} sizning broningizni rad etdi.")
+        create_and_push_user_notification(
+            db,
+            user_id=int(appointment.student_id),
+            notification_type="booking_cancelled",
+            title="Bron rad etildi",
+            message=f"{db_barber.name if db_barber else 'Sartarosh'} broningizni rad etdi. Yangi vaqt tanlang.",
+            barber_id=barber_id,
+            appointment_id=appointment_id,
+            sms_sent=sms_sent,
+        )
     
     return appointment
 
@@ -3779,22 +3867,20 @@ def accept_barber_appointment(barber_id: int, appointment_id: int, db: Session =
     # Send SMS + create notification for user
     if appointment.student_id:
         user = db.query(models.Student).filter(models.Student.id == appointment.student_id).first()
+        msg = f"Sizning broningiz {db_barber.name if db_barber else 'Sartarosh'} tomonidan qabul qilindi! Vaqt: {appointment.appointment_date} {appointment.appointment_time}"
+        sms_sent = False
         if user and user.phone:
-            msg = f"Sizning broningiz {db_barber.name if db_barber else 'Sartarosh'} tomonidan qabul qilindi! Vaqt: {appointment.appointment_date} {appointment.appointment_time}"
-            send_sms_via_webhook(user.phone, msg)
-            
-            # Create user notification
-            notification = models.UserNotification(
-                user_id=appointment.student_id,
-                notification_type="booking_accepted",
-                title="Broningiz qabul qilindi",
-                message=msg,
-                barber_id=barber_id,
-                appointment_id=appointment_id,
-                sms_sent=True,
-            )
-            db.add(notification)
-            db.commit()
+            sms_sent = send_sms_via_webhook(user.phone, msg)
+        create_and_push_user_notification(
+            db,
+            user_id=int(appointment.student_id),
+            notification_type="booking_accepted",
+            title="Broningiz qabul qilindi",
+            message=msg,
+            barber_id=barber_id,
+            appointment_id=appointment_id,
+            sms_sent=sms_sent,
+        )
     
     accept_event_payload = appointment_realtime_payload(appointment, db_barber.name if db_barber else None)
     schedule_realtime("bookings", "booking.accepted", accept_event_payload)
@@ -3841,21 +3927,73 @@ def rate_appointment(appointment_id: int, payload: dict, current_user: dict = De
         db_barber.updated_at = now_tashkent()
         db.commit()
         
-        # Send SMS to barber
-        msg = f"Siz {rating} ⭐ baholandiniz! Sizning yangi o'rtacha baho: {next_rating}/5"
-        send_sms_via_webhook(db_barber.phone, msg)
-        
-        # Create notification for barber
-        barber_notif = models.UserNotification(
+        # Send SMS + barber notification
+        msg = f"Siz {rating} ⭐ baholandiniz! Sizning yangi o'rtacha baho: {round(next_rating, 2)}/5"
+        sms_sent = send_sms_via_webhook(db_barber.phone, msg)
+
+        sync_notification_id_sequence(db)
+        rating_notification = models.Notification(
             user_id=db_barber.id,
-            notification_type="booking_rated",
             title=f"Yangi baho: {rating} ⭐",
             message=msg,
-            appointment_id=appointment_id,
-            sms_sent=True,
+            type="barber_rating",
         )
-        db.add(barber_notif)
+        db.add(rating_notification)
         db.commit()
+        db.refresh(rating_notification)
+
+        schedule_realtime(
+            f"barber:{db_barber.id}",
+            "barber.notification",
+            {
+                "id": rating_notification.id,
+                "title": rating_notification.title,
+                "message": rating_notification.message,
+                "type": rating_notification.type,
+                "read": rating_notification.read,
+                "created_at": rating_notification.created_at.isoformat() if rating_notification.created_at else None,
+            },
+        )
+
+        schedule_realtime(
+            "bookings",
+            "barber.rating.updated",
+            {
+                "barber_id": db_barber.id,
+                "rating": db_barber.rating,
+                "rating_votes": db_barber.rating_votes,
+                "score": rating,
+            },
+        )
+        schedule_realtime(
+            f"barber:{db_barber.id}",
+            "barber.rating.updated",
+            {
+                "barber_id": db_barber.id,
+                "rating": db_barber.rating,
+                "rating_votes": db_barber.rating_votes,
+                "score": rating,
+            },
+        )
+
+        schedule_realtime(
+            "bookings",
+            "booking.rated",
+            {
+                **appointment_realtime_payload(appointment, db_barber.name),
+                "rating": rating,
+                "sms_sent": sms_sent,
+            },
+        )
+        schedule_realtime(
+            f"barber:{db_barber.id}",
+            "booking.rated",
+            {
+                **appointment_realtime_payload(appointment, db_barber.name),
+                "rating": rating,
+                "sms_sent": sms_sent,
+            },
+        )
     
     return {"success": True, "rating": rating, "appointment_id": appointment_id}
 

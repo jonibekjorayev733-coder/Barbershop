@@ -524,7 +524,7 @@ export async function getBarberDashboard(barberId: number): Promise<BarberDashbo
 
 export async function getBarberAppointments(
   barberId: number,
-  options?: { status?: "all" | "pending" | "completed"; date?: string },
+  options?: { status?: "all" | "pending" | "accepted" | "completed" | "cancelled" | "rated"; date?: string },
 ): Promise<BarberAppointmentApi[]> {
   const query = new URLSearchParams();
   if (options?.status) {
@@ -545,7 +545,7 @@ export async function completeBarberAppointment(barberId: number, appointmentId:
 }
 
 export async function approveBarberAppointment(barberId: number, appointmentId: number): Promise<BarberAppointmentApi> {
-  return requestJson<BarberAppointmentApi>(`/barbers/${barberId}/appointments/${appointmentId}/approve`, {
+  return requestJson<BarberAppointmentApi>(`/barbers/${barberId}/appointments/${appointmentId}/accept`, {
     method: "PATCH",
   });
 }
