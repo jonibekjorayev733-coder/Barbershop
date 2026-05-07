@@ -22,6 +22,8 @@ import {
   getBarbers,
   UserBookingBarberApi,
   getUserProfile,
+  getUserAppointments,
+  UserAppointmentApi,
 } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { showLocalNotification } from "@/services/NotificationService";
@@ -62,6 +64,14 @@ function getDates(count = 14) {
   return dates;
 }
 
+function getDaySlots() {
+  const slots: string[] = [];
+  for (let hour = 9; hour <= 19; hour += 1) {
+    slots.push(`${String(hour).padStart(2, "0")}:00`);
+  }
+  return slots;
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   const day = d.getDate();
@@ -100,6 +110,23 @@ function isPastSlot(dateISO: string, slotTime: string, now: Date) {
   return slotMinutes <= nowMinutes;
 }
 
+function bookingStatusLabel(status: UserAppointmentApi["status"]) {
+  switch (status) {
+    case "pending":
+      return "Tasdiqlanmagan";
+    case "accepted":
+      return "Tasdiqlangan";
+    case "completed":
+      return "Yakunlangan";
+    case "rejected":
+      return "Rad etilgan";
+    case "cancelled":
+      return "Bekor qilingan";
+    default:
+      return status;
+  }
+}
+
 export default function BookingScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
@@ -109,6 +136,7 @@ export default function BookingScreen() {
 
   const [step, setStep] = useState<Step>("datetime");
   const [dates] = useState(getDates());
+  const [daySlots] = useState(getDaySlots());
   const [selectedDate, setSelectedDate] = useState(getTodayLocalISO());
   const [availability, setAvailability] = useState<BarberAvailabilityApi | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -119,6 +147,7 @@ export default function BookingScreen() {
   const [booking, setBooking] = useState(false);
   const [confirmation, setConfirmation] = useState<UserBookingConfirmationApi | null>(null);
   const [specialists, setSpecialists] = useState<UserBookingBarberApi[]>([]);
+  const [userAppointments, setUserAppointments] = useState<UserAppointmentApi[]>([]);
   
   const selectedBarber = specialists.find((item) => item.id === barberId);
   const barberAddress = selectedBarber?.barbershop_address || selectedBarber?.barbershop_name || barberName;
@@ -126,12 +155,59 @@ export default function BookingScreen() {
     typeof selectedBarber?.location_latitude === "number" &&
     typeof selectedBarber?.location_longitude === "number";
 
-  const availableSlots = useMemo(
+  const normalizedAvailability = useMemo(() => {
+    const map = new Map<string, "available" | "booked">();
+    (availability?.slots ?? []).forEach((slot) => {
+      map.set(toUz24h(slot.time), slot.status);
+    });
+    return map;
+  }, [availability]);
+
+  const ownBookingsOnDate = useMemo(
     () =>
-      availability?.slots.filter(
-        (slot) => slot.status === "available" && !isPastSlot(selectedDate, slot.time, nowTick),
-      ) ?? [],
-    [availability, nowTick, selectedDate],
+      userAppointments.filter(
+        (item) =>
+          item.barber_id === barberId &&
+          item.appointment_date === selectedDate &&
+          (item.status === "pending" || item.status === "accepted"),
+      ),
+    [barberId, selectedDate, userAppointments],
+  );
+
+  const ownBookingByTime = useMemo(() => {
+    const map = new Map<string, UserAppointmentApi>();
+    ownBookingsOnDate.forEach((item) => {
+      map.set(toUz24h(item.appointment_time), item);
+    });
+    return map;
+  }, [ownBookingsOnDate]);
+
+  const blockingPendingBooking = useMemo(
+    () =>
+      userAppointments
+        .filter((item) => item.barber_id === barberId && item.status === "pending")
+        .sort((a, b) =>
+          `${a.appointment_date} ${a.appointment_time}`.localeCompare(`${b.appointment_date} ${b.appointment_time}`),
+        )[0] ?? null,
+    [barberId, userAppointments],
+  );
+
+  const displaySlots = useMemo(
+    () =>
+      daySlots.map((time) => {
+        const ownBooking = ownBookingByTime.get(time) ?? null;
+        const status = normalizedAvailability.get(time);
+        const past = isPastSlot(selectedDate, time, nowTick);
+
+        if (ownBooking) {
+          return { time, state: "own" as const, ownBooking };
+        }
+        if (past || status === "booked") {
+          return { time, state: "booked" as const, ownBooking: null };
+        }
+        return { time, state: "available" as const, ownBooking: null };
+      }),
+    [daySlots, normalizedAvailability, nowTick, ownBookingByTime, selectedDate],
   );
 
   const blurFocusedElementWeb = useCallback(() => {
@@ -200,6 +276,19 @@ export default function BookingScreen() {
     }
   }, [barberId]);
 
+  const loadAppointments = useCallback(async () => {
+    if (!session?.user_id) {
+      setUserAppointments([]);
+      return;
+    }
+    try {
+      const rows = await getUserAppointments(session.user_id);
+      setUserAppointments(rows);
+    } catch {
+      setUserAppointments([]);
+    }
+  }, [session?.user_id]);
+
   useEffect(() => { fetchSlots(selectedDate); }, [selectedDate, fetchSlots]);
 
   useEffect(() => {
@@ -212,6 +301,10 @@ export default function BookingScreen() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    void loadAppointments();
+  }, [loadAppointments]);
 
   useEffect(() => {
     return () => {
@@ -260,12 +353,25 @@ export default function BookingScreen() {
 
   useEffect(() => {
     if (!selectedTime) return;
-    if (!availableSlots.some((slot) => slot.time === selectedTime)) {
+    if (!displaySlots.some((slot) => slot.time === selectedTime && slot.state === "available")) {
       setSelectedTime("");
     }
-  }, [availableSlots, selectedTime]);
+  }, [displaySlots, selectedTime]);
+
+  useEffect(() => {
+    if (!blockingPendingBooking) return;
+    setSelectedTime("");
+  }, [blockingPendingBooking]);
 
   const handleBook = async () => {
+    if (blockingPendingBooking) {
+      Alert.alert(
+        "Yangi bron vaqtincha yopiq",
+        `Sizda ${blockingPendingBooking.appointment_date} ${toUz24h(blockingPendingBooking.appointment_time)} uchun tasdiqlanmagan bron bor. Avval sartarosh javobini kuting.`,
+      );
+      return;
+    }
+
     if (!clientName.trim()) {
       Alert.alert("Xatolik", "Ismni to'g'ri kiriting");
       return;
@@ -298,6 +404,7 @@ export default function BookingScreen() {
         `${barberName} uchun navbatingiz muvaffaqiyatli yaratildi`,
         "booking_created"
       );
+      await loadAppointments();
       setStep("success");
     } catch (e: any) {
       // Handle 409 Conflict - existing pending booking
@@ -493,21 +600,73 @@ export default function BookingScreen() {
             <Text style={styles.sectionTitle}>Bo&apos;sh vaqtlar</Text>
             {loadingSlots ? (
               <ActivityIndicator color={accent} style={{ marginTop: 30 }} />
-            ) : availableSlots.length === 0 ? (
-              <View style={styles.emptySlots}><Text style={styles.emptyText}>Bugun uchun bo&apos;sh vaqt qolmagan</Text></View>
             ) : (
               <View style={styles.slotsGrid}>
-                {availableSlots.map((s) => (
-                  <Pressable 
-                    key={s.time} 
-                    style={({ pressed }) => [styles.slotItem, selectedTime === s.time && styles.slotItemActive, pressed && styles.pressed]}
-                    onPress={() => setSelectedTime(s.time)}
+                {displaySlots.map((slot) => (
+                  <Pressable
+                    key={slot.time}
+                    style={({ pressed }) => [
+                      styles.slotItem,
+                      slot.state === "booked" && styles.slotItemBooked,
+                      slot.state === "own" && styles.slotItemOwn,
+                      selectedTime === slot.time && styles.slotItemActive,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => {
+                      if (slot.state === "own" && slot.ownBooking) {
+                        const service = slot.ownBooking.service_name || slot.ownBooking.barber_specialty || "Xizmat";
+                        const price = slot.ownBooking.service_price != null
+                          ? `${Math.round(slot.ownBooking.service_price).toLocaleString("uz-UZ")} so'm`
+                          : "Aniqlanmagan";
+                        Alert.alert(
+                          "Mening bronim",
+                          `Vaqt: ${toUz24h(slot.ownBooking.appointment_time)}\nHolat: ${bookingStatusLabel(slot.ownBooking.status)}\nXizmat: ${service}\nNarx: ${price}`,
+                        );
+                        return;
+                      }
+
+                      if (slot.state === "booked") {
+                        Alert.alert("Band vaqt", `${toUz24h(slot.time)} vaqti band.`);
+                        return;
+                      }
+
+                      if (blockingPendingBooking) {
+                        Alert.alert(
+                          "Yangi bron vaqtincha yopiq",
+                          `Sizda ${blockingPendingBooking.appointment_date} ${toUz24h(blockingPendingBooking.appointment_time)} uchun tasdiqlanmagan bron bor.`,
+                        );
+                        return;
+                      }
+
+                      setSelectedTime(slot.time);
+                    }}
                   >
-                    <Text style={[styles.slotText, selectedTime === s.time && styles.activeText]}>{toUz24h(s.time)}</Text>
+                    <Text
+                      style={[
+                        styles.slotText,
+                        (slot.state === "booked" || slot.state === "own") && styles.slotTextStriked,
+                        selectedTime === slot.time && styles.activeText,
+                        slot.state === "booked" && styles.slotTextBooked,
+                        slot.state === "own" && styles.slotTextOwn,
+                      ]}
+                    >
+                      {toUz24h(slot.time)}
+                    </Text>
+                    {slot.state === "own" ? <Text style={styles.slotOwnBadge}>Mening bronim</Text> : null}
                   </Pressable>
                 ))}
               </View>
             )}
+
+            {blockingPendingBooking ? (
+              <View style={styles.blockedInfoCard}>
+                <Ionicons name="lock-closed-outline" size={16} color="#92400e" />
+                <Text style={styles.blockedInfoText}>
+                  Sizda tasdiqlanmagan bron bor: {blockingPendingBooking.appointment_date} · {toUz24h(blockingPendingBooking.appointment_time)}.
+                  Yangi bron uchun avval sartarosh tasdiqlashi kerak.
+                </Text>
+              </View>
+            ) : null}
           </>
         ) : (
           <View style={styles.detailsPadding}>
@@ -550,7 +709,7 @@ export default function BookingScreen() {
             <Text style={styles.bottomDate}>{selectedDate}</Text>
           </View>
           <Pressable 
-            style={styles.actionBtn} 
+            style={[styles.actionBtn, (booking || !!blockingPendingBooking) && styles.actionBtnDisabled]}
             onPress={() => {
               if (step === "datetime") {
                 if (isPastSlot(selectedDate, selectedTime, nowTick)) {
@@ -563,7 +722,7 @@ export default function BookingScreen() {
               }
               void handleBook();
             }}
-            disabled={booking}
+            disabled={booking || !!blockingPendingBooking}
           >
             {booking ? <ActivityIndicator color="#ffffff" /> : (
               <>
@@ -629,9 +788,17 @@ const styles = StyleSheet.create({
   slotsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 10, marginBottom: 20 },
   slotItem: { width: "30.5%", paddingVertical: 14, backgroundColor: cardBg, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: "rgba(148,163,184,0.22)", ...(Platform.OS === "web" ? { boxShadow: "0px 4px 10px rgba(2, 6, 23, 0.16)" } : { shadowColor: "#020617", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 2 }) },
   slotItemActive: { backgroundColor: accent, borderColor: "rgba(255,122,26,0.45)", ...(Platform.OS === "web" ? { boxShadow: "0px 8px 14px rgba(255,122,26,0.26)" } : { shadowColor: "rgba(255,122,26,0.3)", shadowOpacity: 0.22, shadowRadius: 10, elevation: 3 }) },
+  slotItemBooked: { backgroundColor: "#f8fafc", borderColor: "rgba(148,163,184,0.36)" },
+  slotItemOwn: { backgroundColor: "rgba(16,185,129,0.14)", borderColor: "rgba(16,185,129,0.36)" },
   slotText: { color: textDark, fontWeight: "800", fontSize: 14 },
+  slotTextStriked: { textDecorationLine: "line-through" },
+  slotTextBooked: { color: "#64748b" },
+  slotTextOwn: { color: "#047857" },
+  slotOwnBadge: { marginTop: 4, fontSize: 10, fontWeight: "800", color: "#047857" },
   emptySlots: { alignItems: "center", padding: 40, marginTop: 20 },
   emptyText: { color: textMuted, fontSize: 15, fontWeight: "600" },
+  blockedInfoCard: { marginHorizontal: 16, marginTop: 12, backgroundColor: "#fffbeb", borderWidth: 1, borderColor: "#fde68a", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, flexDirection: "row", gap: 8, alignItems: "flex-start" },
+  blockedInfoText: { color: "#92400e", flex: 1, fontSize: 12, fontWeight: "700", lineHeight: 18 },
   
   // Details Section
   detailsPadding: { paddingHorizontal: 16, paddingTop: 8 },
@@ -648,6 +815,7 @@ const styles = StyleSheet.create({
   bottomTime: { color: textDark, fontSize: 18, fontWeight: "900" },
   bottomDate: { color: textMuted, fontSize: 12, marginTop: 2, fontWeight: "600" },
   actionBtn: { backgroundColor: accent, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "rgba(255,122,26,0.45)", ...(Platform.OS === "web" ? { boxShadow: "0px 8px 14px rgba(255,122,26,0.26)" } : { shadowColor: "rgba(255,122,26,0.3)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 12, elevation: 4 }) },
+  actionBtnDisabled: { opacity: 0.55 },
   actionBtnText: { color: "#ffffff", fontWeight: "900", fontSize: 15 },
   
   // Success State

@@ -114,10 +114,18 @@ function MapModal({
   onClose: () => void;
 }) {
   const [marker, setMarker] = useState<{ latitude: number; longitude: number } | null>(
-    lat && lng ? { latitude: lat, longitude: lng } : null
+    typeof lat === "number" && typeof lng === "number" ? { latitude: lat, longitude: lng } : null
   );
   const [locating, setLocating] = useState(false);
   const [addr, setAddr] = useState(address);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    setMarker(typeof lat === "number" && typeof lng === "number" ? { latitude: lat, longitude: lng } : null);
+    setAddr(address || "");
+  }, [address, lat, lng, visible]);
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
     try {
@@ -134,6 +142,10 @@ function MapModal({
 
   const onPress = async (e: MapPressEvent) => {
     const coord = e.nativeEvent.coordinate;
+    if (!Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+      Alert.alert("Xatolik", "Koordinata noto'g'ri qaytdi. Qayta urinib ko'ring.");
+      return;
+    }
     setMarker(coord);
     await reverseGeocode(coord.latitude, coord.longitude);
   };
@@ -185,7 +197,6 @@ function MapModal({
           onPress={onPress}
           showsUserLocation
           showsMyLocationButton={false}
-          userInterfaceStyle="dark"
           mapType="standard"
         >
           {marker && <Marker coordinate={marker} pinColor={colors.goldAlt} />}
@@ -233,7 +244,7 @@ function PriceModal({
           <View style={pm.handle} />
           <Text style={pm.title}>Narx va Chegirma</Text>
 
-          <Text style={pm.label}>Xizmat narxi (so'm)</Text>
+          <Text style={pm.label}>Xizmat narxi (so&apos;m)</Text>
           <View style={pm.inputRow}>
             <Ionicons name="pricetag-outline" size={18} color={colors.goldAlt} />
             <TextInput style={pm.input} value={p} onChangeText={setP} keyboardType="numeric" placeholder="Masalan: 60000" placeholderTextColor={colors.muted} />
@@ -411,7 +422,7 @@ export default function BarberProfileScreen() {
 
         {/* 2. MUTAXASSISLIK */}
         <Section title="Mutaxassislik" icon="cut-outline">
-          <Text style={s.subLabel}>Asosiy yo'nalish</Text>
+          <Text style={s.subLabel}>Asosiy yo&apos;nalish</Text>
           <FlatList
             data={SPECIALTIES}
             keyExtractor={(i) => i.id}
@@ -436,7 +447,7 @@ export default function BarberProfileScreen() {
             }}
           />
 
-          <Text style={[s.subLabel, { marginTop: spacing.lg }]}>Qo'shimcha yo'nalishlar</Text>
+          <Text style={[s.subLabel, { marginTop: spacing.lg }]}>Qo&apos;shimcha yo&apos;nalishlar</Text>
           <View style={s.directionGrid}>
             {SPECIALTIES.map((item) => {
               const active = directions.includes(item.id);
@@ -495,7 +506,7 @@ export default function BarberProfileScreen() {
               </LinearGradient>
               <View style={s.mapPreviewOverlay}>
                 <Ionicons name="pencil" size={14} color="#fff" />
-                <Text style={s.mapPreviewEdit}>O'zgartirish</Text>
+                <Text style={s.mapPreviewEdit}>O&apos;zgartirish</Text>
               </View>
             </TouchableOpacity>
           ) : null}
@@ -522,8 +533,8 @@ export default function BarberProfileScreen() {
                 <Ionicons name="lock-closed-outline" size={18} color={colors.info} />
               </View>
               <View>
-                <Text style={s.settingLabel}>Parolni o'zgartirish</Text>
-                <Text style={s.settingValue}>Yangi parol o'rnatish</Text>
+                <Text style={s.settingLabel}>Parolni o&apos;zgartirish</Text>
+                <Text style={s.settingValue}>Yangi parol o&apos;rnatish</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
